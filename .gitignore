@@ -1,2 +1,4 @@
 data/
 notebook_exploratory/Exploratory_Figures/
+.DS_Store
+External/StochasticForceInference/
