@@ -190,7 +190,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     S.print_report()
     return S, descriptor
 
-path =  "Data/tracking_results/FishTank20200525_161602_tracking_results.h5"
+path =  "Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
 
 X_coordinates, fightbout = prepare_data(path,0,infight=True)
 dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
@@ -277,10 +277,10 @@ def Find_endpoints(S_model,tag="model"):
     startpoints = []
     all_forces = []
     #accepted_trajs = []
-    D_values = np.linspace(1, 8, 15)
-    length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
+    D_values = np.linspace(1, 8, 20)
+    length = np.linspace(-np.pi, np.pi, 15,endpoint = False)
     outdir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-    outpath = os.path.join(outdir, f"Endpoints_exp15_fight1_{tag}.csv")
+    outpath = os.path.join(outdir, f"Endpoints_exp3_fight1_{tag}.csv")
 
     accepted = 0
 
@@ -299,7 +299,7 @@ def Find_endpoints(S_model,tag="model"):
                 for theta_j0 in length:
                     x0 = [d_sim, theta_i0, theta_j0]
                     #x0 = [np.random.uniform(1.0,8.0),np.random.uniform(-np.pi,np.pi),np.random.uniform(-np.pi,np.pi)]
-                    traj_sim = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=1000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
+                    traj_sim = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=100000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
                     final_point= traj_sim[-1]
                     force = np.array(S_model.force_ansatz(final_point[None, :])[0])
                     print("x0 =", x0, " final =", np.round(np.array(final_point), 3), " force =", force)

@@ -1,0 +1,65 @@
+exp 2
+M=4
+JS distance
+first 50% 0.11846045491585361
+last 50% 0.09575909380131982
+with triple term
+[0.77, 2.8, 7.1]
+
+    def C_func(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+
+        #p  = poly_1d(jnp.array([D]))
+        p = radial_basis(D)      
+        f1 = fourier1d_F1(jnp.array([th1]))
+        f2 = fourier1d_F2(jnp.array([th2]))  
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+        return phi 
+
+- triple = jnp.einsum('i,j,k->ijk', p, f1[1:3], f2[1:3]).reshape(-1)
+0.1089006754717241
+0.10558032944210465
+
+
+exp 18
+ #0.3,3.5,10 pretty good but first term most information
+S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=jnp.array([0.7903118, 2.8666334, 7.324877]))
+ #0.5,3.5,10 looked better # 0.8,3.5,10 goes completely wrong 
+ #0.5,3.3,10 k=4 boundary issue
+#0.5,3.5,8
+# M=5,lam=jnp.array([0.5 , 4 ,10] No boundary condition but  3 bumbs at peak = -1
+# M=4,lam=jnp.array([0.8 , 3 ,9])) big bumb at angles +2 the rest looks good
+# M=5,lam=jnp.array([0.8 , 3 ,9])) looks better best till now
+# M=5,lam=jnp.array([0.3,3.5,10])) BETTER, 
+# M=5,lam=jnp.array([0.8,3.5,10] bit less good 
+
+exp 15
+0.13935240736186894
+0.08879520380427051
+    def C_func(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+
+
+        p = radial_basis(D)      
+        f1 = fourier1d_F1(jnp.array([th1]))
+        f2 = fourier1d_F2(jnp.array([th2]))  
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:5], f2[1:5]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) 
+
+q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
+lam_common = jnp.array([q1, q60, q98])
+print(lam_common)
+
+exp0
+there are already 2 fightbouts before so the distirbutions are really not equal -> is this interesting?
