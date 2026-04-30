@@ -156,18 +156,6 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     fourier1d_F2 = SFI.OLI_bases.Fourier_basis(dim =1,order=M,center = jnp.array([0.0]),width = jnp.array([2*jnp.pi]))
     
     def radial_basis(D):
-        """
-                [
-        [0.3, 1.0, 5.0],
-        [0.5, 1.5, 6.0],
-        [0.5, 1.5, 10.0],
-        [0.7, 2.0, 8.0],
-        [1.0, 3.0, 10.0],
-        ]"""
-        #lam = jnp.array([0.8,2.5, 6.0]) good for second experiment
-        #lam = jnp.array([0.7,2.7, 7.0]) #good for second experiment
-        #lam = jnp.array([0.5, 1.0,5.0]) good for frist 
-        #p_exp = jnp.exp(-D /lam)
 
         return jnp.exp(-D / lam)#p_exp #jnp.concatenate([p_poly,p_exp])
 
@@ -202,21 +190,20 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     S.print_report()
     return S, descriptor
 
-
-#path = "/Users/marindevandijk/Documents/CLS 2025/Thesis/Coding/ZebraFish_project/Data/tracking_results/FishTank20200525_161602_tracking_results.h5"
-#d_pp,theta_i,theta_j = calculate_variables(prepare_data(path,True))
 path =  "Data/tracking_results/FishTank20200130_153857_tracking_results.h5"
-#path = "/Users/marindevandijk/Documents/CLS 2025/Thesis/Coding/ZebraFish_project/Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
 
 X_coordinates, fightbout = prepare_data(path,0,infight=True)
 dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
 print(dpp.shape)
-X, time_idx, segment_ids, seg_ranges = Build_segmented_data(dpp, theta1, theta2)
 
-#X, t = subsample_random_segments(X, segment_ids, fraction=1)
-#S85, descriptor = Run_Force_inference(X, t, K=3, M=4,lam = jnp.array([0.77, 2.8, 7.1]))
+
+X, time_idx, segment_ids, seg_ranges = Build_segmented_data(dpp, theta1, theta2)
+d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
 n = int(0.5* len(X))
 
+q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
+lam_common = jnp.array([q1, q60, q98])
+print(lam_common)
 
 #X_50 = X[:n]
 #t_50 = time_idx[:n]
@@ -225,9 +212,10 @@ X_full,t_full = X, time_idx
 X_first,t_first = X[:n],time_idx[:n]
 X_last,t_last = X[n:],time_idx[n:]
 
-S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
+
+#S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
+S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=lam_common)
+S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=lam_common)
 
 #N = len(d_pp)
 #dpp_half,thetai_half,thetaj_half = d_pp[:int(N)],theta_i[:int( N)], theta_j[:int( N)]
@@ -283,7 +271,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
                 break
     return jnp.stack(xs)
 
-def Find_endpoints(S_model):
+def Find_endpoints(S_model,tag="model"):
     accept_rate = []
     all_endpoints =[]
     startpoints = []
@@ -292,8 +280,7 @@ def Find_endpoints(S_model):
     D_values = np.linspace(1, 8, 2)
     length = np.linspace(-np.pi, np.pi, 3,endpoint = False)
     outdir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-    outpath = os.path.join(outdir, "trialrun.csv")
-    print("Saving to:", outpath)
+    outpath = os.path.join(outdir, f"Endpoints_exp15_fight1_{tag}.csv")
 
     accepted = 0
 
@@ -301,7 +288,7 @@ def Find_endpoints(S_model):
         writer = csv.writer(f)
 
         # write header
-        writer.writerow([
+        writer.writerow(["model",
             "d0", "theta10", "theta20",
             "d_final", "theta1_final", "theta2_final",
             "F_d", "F_theta1", "F_theta2"
@@ -321,7 +308,7 @@ def Find_endpoints(S_model):
                     all_forces.append(force)
                     startpoints.append(x0)
                     writer.writerow([
-                            x0[0], x0[1], x0[2],
+                            tag,x0[0], x0[1], x0[2],
                             final_point[0], final_point[1], final_point[2],
                             force[0], force[1], force[2]
                         ])
@@ -342,5 +329,5 @@ def Find_endpoints(S_model):
 #D_values = np.linspace(0.5,4,50)
 #D_values = np.concatenate([np.linspace(0.5, 4.0, 35, endpoint=False),np.linspace(4.0, 6.0, 10, endpoint=False),np.linspace(6.0, 8.0, )])
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first)
-#np.savetxt("endpoints_half.csv",clustered_endpoints,delimiter=",",header="d,theta1,theta2",comments="")
+all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half")
+all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half")

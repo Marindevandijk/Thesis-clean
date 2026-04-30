@@ -6,8 +6,9 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
-#SBATCH --partition=thin
-#SBATCH --account=mvdijk01
+#SBATCH --partition=rome
+#SBATCH --account=gusr125350
+
 
 module load 2023
 module load Python/3.11.3-GCCcore-12.3.0
