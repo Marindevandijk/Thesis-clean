@@ -190,7 +190,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     S.print_report()
     return S, descriptor
 
-path =  "Data/tracking_results/FishTank20200130_153857_tracking_results.h5"
+path =  "Data/tracking_results/FishTank20200525_161602_tracking_results.h5"
 
 X_coordinates, fightbout = prepare_data(path,0,infight=True)
 dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
