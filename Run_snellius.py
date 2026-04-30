@@ -277,8 +277,8 @@ def Find_endpoints(S_model,tag="model"):
     startpoints = []
     all_forces = []
     #accepted_trajs = []
-    D_values = np.linspace(1, 8, 2)
-    length = np.linspace(-np.pi, np.pi, 3,endpoint = False)
+    D_values = np.linspace(1, 8, 15)
+    length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
     outdir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
     outpath = os.path.join(outdir, f"Endpoints_exp15_fight1_{tag}.csv")
 
