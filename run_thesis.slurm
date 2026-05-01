@@ -2,7 +2,7 @@
 #SBATCH --job-name=fish_model
 #SBATCH --output=output.log
 #SBATCH --error=error.log
-#SBATCH --time=02:00:00
+#SBATCH --time=10:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
