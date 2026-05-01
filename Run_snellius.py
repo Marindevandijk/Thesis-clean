@@ -168,7 +168,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         p = radial_basis(D)      
         f1 = fourier1d_F1(jnp.array([th1]))
         f2 = fourier1d_F2(jnp.array([th2]))  
-        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:3], f2[1:3]).reshape(-1)
         
         phi = jnp.concatenate([
         p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
@@ -269,9 +269,9 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
             if converged_count >= n_consecutive:
                 xs.append(x) 
                 break
-    return jnp.stack(xs)
+    return jnp.stack(xs), (step+1)
 
-def Find_endpoints(S_model,tag="model"):
+def Find_endpoints(S_model,tag="model", exp_id=3, fight_id=1):
     accept_rate = []
     all_endpoints =[]
     startpoints = []
@@ -279,8 +279,11 @@ def Find_endpoints(S_model,tag="model"):
     #accepted_trajs = []
     D_values = np.linspace(1, 8, 20)
     length = np.linspace(-np.pi, np.pi, 15,endpoint = False)
-    outdir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-    outpath = os.path.join(outdir, f"Endpoints_exp3_fight1_{tag}.csv")
+    base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
+    outdir = os.path.join(base_dir, "Results", f"Exp_{exp_id}_fight{fight_id}")
+    os.makedirs(outdir, exist_ok=True)
+
+    outpath = os.path.join(outdir, f"Endpoints_exp{exp_id}_fight{fight_id}_{tag}.csv")
 
     accepted = 0
 
@@ -291,7 +294,7 @@ def Find_endpoints(S_model,tag="model"):
         writer.writerow(["model",
             "d0", "theta10", "theta20",
             "d_final", "theta1_final", "theta2_final",
-            "F_d", "F_theta1", "F_theta2"
+            "F_d", "F_theta1", "F_theta2","step_used"
         ])
         for d_sim in D_values:
             
@@ -299,7 +302,7 @@ def Find_endpoints(S_model,tag="model"):
                 for theta_j0 in length:
                     x0 = [d_sim, theta_i0, theta_j0]
                     #x0 = [np.random.uniform(1.0,8.0),np.random.uniform(-np.pi,np.pi),np.random.uniform(-np.pi,np.pi)]
-                    traj_sim = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=10000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
+                    traj_sim,step = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=10000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
                     final_point= traj_sim[-1]
                     force = np.array(S_model.force_ansatz(final_point[None, :])[0])
                     print("x0 =", x0, " final =", np.round(np.array(final_point), 3), " force =", force)
@@ -310,7 +313,7 @@ def Find_endpoints(S_model,tag="model"):
                     writer.writerow([
                             tag,x0[0], x0[1], x0[2],
                             final_point[0], final_point[1], final_point[2],
-                            force[0], force[1], force[2]
+                            force[0], force[1], force[2],step
                         ])
                     f.flush()
                     accepted+=1
@@ -329,5 +332,5 @@ def Find_endpoints(S_model,tag="model"):
 #D_values = np.linspace(0.5,4,50)
 #D_values = np.concatenate([np.linspace(0.5, 4.0, 35, endpoint=False),np.linspace(4.0, 6.0, 10, endpoint=False),np.linspace(6.0, 8.0, )])
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half")
-all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half")
+all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half", exp_id=3, fight_id=1)
+all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half", exp_id=3, fight_id=1)
