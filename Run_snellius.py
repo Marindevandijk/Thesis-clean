@@ -299,7 +299,7 @@ def Find_endpoints(S_model,tag="model"):
                 for theta_j0 in length:
                     x0 = [d_sim, theta_i0, theta_j0]
                     #x0 = [np.random.uniform(1.0,8.0),np.random.uniform(-np.pi,np.pi),np.random.uniform(-np.pi,np.pi)]
-                    traj_sim = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=100000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
+                    traj_sim = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=10000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
                     final_point= traj_sim[-1]
                     force = np.array(S_model.force_ansatz(final_point[None, :])[0])
                     print("x0 =", x0, " final =", np.round(np.array(final_point), 3), " force =", force)

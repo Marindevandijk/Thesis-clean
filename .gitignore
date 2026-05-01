@@ -2,3 +2,10 @@ data/
 notebook_exploratory/Exploratory_Figures/
 .DS_Store
 External/StochasticForceInference/
+
+Results/
+Endpoints_*.csv
+*.log
+
+Endpoints_*.csv
+*.csv

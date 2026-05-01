@@ -63,3 +63,5 @@ print(lam_common)
 
 exp0
 there are already 2 fightbouts before so the distirbutions are really not equal -> is this interesting?
+
+exp 3
