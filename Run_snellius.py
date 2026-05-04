@@ -49,7 +49,7 @@ def prepare_data(path,fightnumber = 0,infight =True):
         X_coordinates = X[fightbout[fightnumber,1]:fightbout[fightnumber,2],:,:,:]
     else:
         X_coordinates = X.copy()
-    return X_coordinates,fightbout[fightnumber]
+    return X_coordinates,fightbout[fightnumber], EXP_id
 
 #path = "/Users/marindevandijk/Documents/CLS 2025/Thesis/Coding/ZebraFish_project/Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
 #X_coordinates_3, fightbout = prepare_data(path,fightnumber = 0,infight =False)
@@ -168,7 +168,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         p = radial_basis(D)      
         f1 = fourier1d_F1(jnp.array([th1]))
         f2 = fourier1d_F2(jnp.array([th2]))  
-        triple = jnp.einsum('i,j,k->ijk', p, f1[1:3], f2[1:3]).reshape(-1)
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
         
         phi = jnp.concatenate([
         p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
@@ -190,9 +190,9 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     S.print_report()
     return S, descriptor
 
-path =  "Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
+path =  "Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
 
-X_coordinates, fightbout = prepare_data(path,0,infight=True)
+X_coordinates, fightbout, Exp_id = prepare_data(path,0,infight=True)
 dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
 print(dpp.shape)
 
@@ -214,8 +214,8 @@ X_last,t_last = X[n:],time_idx[n:]
 
 
 #S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=lam_common)
-S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=lam_common)
+S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
+S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
 
 #N = len(d_pp)
 #dpp_half,thetai_half,thetaj_half = d_pp[:int(N)],theta_i[:int( N)], theta_j[:int( N)]
@@ -332,5 +332,9 @@ def Find_endpoints(S_model,tag="model", exp_id=3, fight_id=1):
 #D_values = np.linspace(0.5,4,50)
 #D_values = np.concatenate([np.linspace(0.5, 4.0, 35, endpoint=False),np.linspace(4.0, 6.0, 10, endpoint=False),np.linspace(6.0, 8.0, )])
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half", exp_id=3, fight_id=1)
-all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half", exp_id=3, fight_id=1)
+print("Using file:", os.path.basename(path))
+print("Exp_id:", Exp_id)
+print("Fightbout:", fightbout)
+
+all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half", exp_id=Exp_id, fight_id=1)
+all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half", exp_id=Exp_id, fight_id=1)
