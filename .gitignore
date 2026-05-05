@@ -9,3 +9,10 @@ Endpoints_*.csv
 
 Endpoints_*.csv
 *.csv
+
+Data/
+Results/
+thesis_env/
+__pycache__/
+*.pyc
+*.log
