@@ -12,6 +12,7 @@ import matplotlib.colors as mcolors
 import pandas as pd
 import pickle
 from scipy.spatial.distance import jensenshannon
+import csv
 
 def get_experimentID_fightbouts(path):
 
@@ -149,6 +150,21 @@ def subsample_random_segments(X, segment_ids, fraction=0.85):
     time_idx_new = np.concatenate(time_list)
     return X_new, time_idx_new
 
+def js_score(real, sim, bins, range_):
+    hist_real, bin_edges = np.histogram(real, bins=bins, range=range_)
+    hist_sim, _ = np.histogram(sim, bins=bin_edges, range=range_)
+
+    p = hist_real / np.sum(hist_real)
+    q = hist_sim / np.sum(hist_sim)
+
+    return jensenshannon(p, q)
+
+def average_js_score(real_dpp, real_t1, real_t2, traj_sim):
+    score_dpp = js_score(real_dpp, np.array(traj_sim[:, 0]), bins=50, range_=(0, 20))
+    score_t1  = js_score(real_t1,  np.array(traj_sim[:, 1]), bins=50, range_=(-np.pi, np.pi))
+    score_t2  = js_score(real_t2,  np.array(traj_sim[:, 2]), bins=50, range_=(-np.pi, np.pi))
+    return (score_dpp + score_t1 + score_t2) / 3
+
 def Run_Force_inference(X,time_idx,K,M,lam):
     traj = SFI.StochasticTrajectoryData(X, time_idx, 0.01)
     poly_1d,poly_describe = SFI.OLI_bases.polynomial_basis(dim=1,order=K)
@@ -190,38 +206,6 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     S.print_report()
     return S, descriptor
 
-path =  "Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
-
-X_coordinates, fightbout, Exp_id = prepare_data(path,0,infight=True)
-dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
-print(dpp.shape)
-
-
-X, time_idx, segment_ids, seg_ranges = Build_segmented_data(dpp, theta1, theta2)
-d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
-n = int(0.5* len(X))
-
-q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
-lam_common = jnp.array([q1, q60, q98])
-print(lam_common)
-
-#X_50 = X[:n]
-#t_50 = time_idx[:n]
-#print(len(X_50), len(t_50))
-X_full,t_full = X, time_idx
-X_first,t_first = X[:n],time_idx[:n]
-X_last,t_last = X[n:],time_idx[n:]
-
-
-#S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
-S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
-
-#N = len(d_pp)
-#dpp_half,thetai_half,thetaj_half = d_pp[:int(N)],theta_i[:int( N)], theta_j[:int( N)]
-#X, time_idx,_,_ = Build_segmented_data(d_pp, theta_i, theta_j)
-#S_half, descriptor = Run_Force_inference(X,time_idx, K=2, M=3)
-
 def endpoint_clustering(all_endpoints):
     D_values = np.unique(all_endpoints[:,0])
     clustered_all = []
@@ -237,7 +221,7 @@ def endpoint_clustering(all_endpoints):
 
     clustered_all = np.vstack(clustered_all)
     return clustered_all
-import csv
+
 def cluster_endpoints_3d(all_endpoints, decimals=3):
     rounded = np.round(all_endpoints, decimals=decimals)
     clustered = np.unique(rounded, axis=0)
@@ -271,7 +255,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
                 break
     return jnp.stack(xs), (step+1)
 
-def Find_endpoints(S_model,tag="model", exp_id=3, fight_id=1):
+def Find_endpoints(S_model,outdir,tag="model", exp_id=3, fight_id=1):
     accept_rate = []
     all_endpoints =[]
     startpoints = []
@@ -279,9 +263,6 @@ def Find_endpoints(S_model,tag="model", exp_id=3, fight_id=1):
     #accepted_trajs = []
     D_values = np.linspace(1, 8, 15)
     length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
-    base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-    outdir = os.path.join(base_dir, "Results", f"Exp_{exp_id}_fight{fight_id}")
-    os.makedirs(outdir, exist_ok=True)
 
     outpath = os.path.join(outdir, f"Endpoints_exp{exp_id}_fight{fight_id}_{tag}.csv")
 
@@ -329,12 +310,133 @@ def Find_endpoints(S_model,tag="model", exp_id=3, fight_id=1):
     print(accept_rate)
     return all_endpoints,all_forces,startpoints, accept_rate
 
-#D_values = np.linspace(0.5,4,50)
-#D_values = np.concatenate([np.linspace(0.5, 4.0, 35, endpoint=False),np.linspace(4.0, 6.0, 10, endpoint=False),np.linspace(6.0, 8.0, )])
+def Simulation(S_model,x0,dt,N_steps,key):
+    Diffusion = np.array(S_model.diffusion_average)
+    L = jnp.linalg.cholesky(Diffusion)
+    x = jnp.array(x0)
+    xs = []
+    for _ in range(N_steps):
+        xs.append(x)
+        drift = S_model.force_ansatz(x[None, :])[0] 
+        key, subkey = random.split(key)
+        xi = random.normal(subkey, (3,))
+
+        x = x + drift * dt + jnp.sqrt(2*dt) *  (L @ xi)
+        
+        x = x.at[0].set(jnp.clip(x[0], 0.0, 35))  
+        x = x.at[1].set(wrap_pi(x[1]))
+        x = x.at[2].set(wrap_pi(x[2]))
+
+    return jnp.stack(xs), key
+
+
+np.random.seed(38)
+path =  "Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
+fight_id = 1
+
+X_coordinates, fightbout, Exp_id = prepare_data(path,0,infight=True)
+dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
+
 
 print("Using file:", os.path.basename(path))
 print("Exp_id:", Exp_id)
 print("Fightbout:", fightbout)
+print("dpp shape",dpp.shape)
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, tag="first_half", exp_id=Exp_id, fight_id=1)
-all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last, tag="last_half", exp_id=Exp_id, fight_id=1)
+base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
+outdir = os.path.join(base_dir, "Results", f"Exp_{Exp_id}_fight{fight_id}")
+os.makedirs(outdir, exist_ok=True)
+
+
+X, time_idx, segment_ids, seg_ranges = Build_segmented_data(dpp, theta1, theta2)
+d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
+n = int(0.5* len(X))
+
+q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
+lam_common = jnp.array([q1, q60, q98])
+print(lam_common)
+
+X_full,t_full = X, time_idx
+X_first,t_first = X[:n],time_idx[:n]
+X_last,t_last = X[n:],time_idx[n:]
+
+
+#S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
+S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
+S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
+
+d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
+
+i_first = np.random.randint(0, len(X_first))
+i_last  = np.random.randint(0, len(X_last))
+
+x0_first = X_first[i_first]
+x0_last  = X_last[i_last]
+
+key = random.PRNGKey(0)
+#traj_sim_full, key = Simulation(S_full, x0, dt=0.01, N_steps=500000, key=key)
+traj_sim_first, key = Simulation(S_first, x0_first, dt=0.01, N_steps=500000, key=key)
+traj_sim_last, key = Simulation(S_last, x0_last, dt=0.01, N_steps=500000, key=key)
+
+traj_sim_first_np = np.array(traj_sim_first)
+traj_sim_last_np = np.array(traj_sim_last)
+
+np.savez(
+    os.path.join(outdir, "stochastic_simulated_trajectories.npz"),
+    traj_sim_first=traj_sim_first_np,
+    traj_sim_last=traj_sim_last_np,
+    x0_first=x0_first,
+    x0_last=x0_last,
+)
+
+fig, axs = plt.subplots(1, 3, figsize=(15,4))
+
+axs[0].hist(traj_sim_first[:,0],alpha = 0.5,density = True,label=r'First 50 %', bins=100)
+axs[0].hist(traj_sim_last[:,0],alpha=0.5,density = True,label=r'Last 50 %', bins=100)
+axs[0].legend()
+axs[0].set_title(r'$d_{pp}$')
+
+axs[1].hist(wrap_pi(traj_sim_first[:,1]) ,density = True,alpha = 0.5,bins=100)
+axs[1].hist(wrap_pi(traj_sim_last[:,1]) ,density = True,alpha=0.5,bins=100)
+axs[1].set_title(r"$\theta_1$")
+
+axs[2].hist(wrap_pi(traj_sim_first[:,2]),density =True, alpha = 0.5,bins=100)
+axs[2].hist(wrap_pi(traj_sim_last[:,2]),density =True, alpha = 0.5,bins=100)
+
+axs[2].set_title(r"$\theta_2$")
+plt.tight_layout()
+fig_path = os.path.join(outdir, "stochastic_simulation_distributions.png")
+plt.savefig(fig_path, dpi=300)
+plt.close()
+
+
+js_first = average_js_score(X_first[:,0],wrap_pi(X_first[:,1]),wrap_pi(X_first[:,2]),traj_sim_first)
+js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2]),traj_sim_last)
+
+all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", exp_id=Exp_id, fight_id=1)
+all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
+
+def save_sfi_model(S_model, descriptor, outdir, tag):
+    # 1. Save the whole model object
+    with open(os.path.join(outdir, f"SFI_full_model_{tag}.pkl"), "wb") as f:
+        pickle.dump(S_model, f)
+
+save_sfi_model(S_first, descriptor, outdir, "first_half")
+save_sfi_model(S_last, descriptor, outdir, "last_half")
+
+with open(os.path.join(outdir, "metadata.txt"), "w") as f:
+    f.write(f"path: {path}\n")
+    f.write(f"file: {os.path.basename(path)}\n")
+    f.write(f"Exp_id: {Exp_id}\n")
+    f.write(f"fightnumber_used: {fight_id}\n")
+    f.write(f"fightbout: {fightbout}\n")
+    f.write("\n")
+
+
+    f.write("lambda_common (q1, q50, q95):\n")
+    f.write(f"{np.array(lam_common)}\n")
+
+    f.write("\n")
+    f.write("Jensen-Shannon scores:\n")
+    f.write(f"JS_first_half: {js_first}\n")
+    f.write(f"JS_last_half: {js_last}\n")
