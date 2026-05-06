@@ -415,9 +415,18 @@ all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, ou
 all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
 
 def save_sfi_model(S_model, descriptor, outdir, tag):
-    # 1. Save the whole model object
-    with open(os.path.join(outdir, f"SFI_full_model_{tag}.pkl"), "wb") as f:
-        pickle.dump(S_model, f)
+
+    save_dict = {
+        "force_coefficients": np.array(S_model.phi),
+        "diffusion_tensor": np.array(S_model.diffusion_average),
+        "force_error": np.array(S_model.force_error),
+        "descriptor": descriptor,
+    }
+
+    np.savez(
+        os.path.join(outdir, f"SFI_model_data_{tag}.npz"),
+        **save_dict
+    )
 
 save_sfi_model(S_first, descriptor, outdir, "first_half")
 save_sfi_model(S_last, descriptor, outdir, "last_half")

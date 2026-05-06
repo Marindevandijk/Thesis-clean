@@ -52,9 +52,7 @@ def prepare_data(path,fightnumber = 0,infight =True):
         X_coordinates = X.copy()
     return X_coordinates,fightbout[fightnumber], EXP_id
 
-#path = "/Users/marindevandijk/Documents/CLS 2025/Thesis/Coding/ZebraFish_project/Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
-#X_coordinates_3, fightbout = prepare_data(path,fightnumber = 0,infight =False)
-#print(fightbout)
+
 def wrap_pi(a):
     return (a + np.pi) % (2*np.pi) - np.pi
 
@@ -331,7 +329,7 @@ def Simulation(S_model,x0,dt,N_steps,key):
 
 
 np.random.seed(38)
-path =  "Data/tracking_results/FishTank20200218_153008_tracking_results.h5"
+path =  "Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
 fight_id = 2
 
 X_coordinates, fightbout, Exp_id = prepare_data(path,0,infight=True)
@@ -362,8 +360,8 @@ X_last,t_last = X[n:],time_idx[n:]
 
 
 #S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
-S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=jnp.array([0.9565223 ,2.8346605 ,5.578594]))
+S_first, descriptor = Run_Force_inference(X_first, t_first,K=2, M=4,lam=lam_common)
+S_last, descriptor = Run_Force_inference(X_last, t_last,K=2, M=4,lam=lam_common)
 
 d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
 
@@ -416,13 +414,6 @@ js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2])
 all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", exp_id=Exp_id, fight_id=1)
 all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
 
-def save_sfi_model(S_model, descriptor, outdir, tag):
-    # 1. Save the whole model object
-    with open(os.path.join(outdir, f"SFI_full_model_{tag}.pkl"), "wb") as f:
-        pickle.dump(S_model, f)
-
-save_sfi_model(S_first, descriptor, outdir, "first_half")
-save_sfi_model(S_last, descriptor, outdir, "last_half")
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write(f"path: {path}\n")
@@ -440,3 +431,20 @@ with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("Jensen-Shannon scores:\n")
     f.write(f"JS_first_half: {js_first}\n")
     f.write(f"JS_last_half: {js_last}\n")
+
+def save_sfi_model(S_model, descriptor, outdir, tag):
+
+    save_dict = {
+        "force_coefficients": np.array(S_model.phi),
+        "diffusion_tensor": np.array(S_model.diffusion_average),
+        "force_error": np.array(S_model.force_error),
+        "descriptor": descriptor,
+    }
+
+    np.savez(
+        os.path.join(outdir, f"SFI_model_data_{tag}.npz"),
+        **save_dict
+    )
+
+save_sfi_model(S_first, descriptor, outdir, "first_half")
+save_sfi_model(S_last, descriptor, outdir, "last_half")

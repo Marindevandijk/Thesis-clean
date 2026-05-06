@@ -330,7 +330,7 @@ def Simulation(S_model,x0,dt,N_steps,key):
 
 np.random.seed(38)
 path =  "Data/tracking_results/FishTank20200331_162136_tracking_results.h5"
-fight_id = 1
+fight_id = 2
 
 X_coordinates, fightbout, Exp_id = prepare_data(path,0,infight=True)
 dpp,theta1,theta2 = calculate_variables(X_coordinates[:,:,:,:])
@@ -414,13 +414,6 @@ js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2])
 all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", exp_id=Exp_id, fight_id=1)
 all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
 
-def save_sfi_model(S_model, descriptor, outdir, tag):
-    # 1. Save the whole model object
-    with open(os.path.join(outdir, f"SFI_full_model_{tag}.pkl"), "wb") as f:
-        pickle.dump(S_model, f)
-
-save_sfi_model(S_first, descriptor, outdir, "first_half")
-save_sfi_model(S_last, descriptor, outdir, "last_half")
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write(f"path: {path}\n")
@@ -438,3 +431,19 @@ with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("Jensen-Shannon scores:\n")
     f.write(f"JS_first_half: {js_first}\n")
     f.write(f"JS_last_half: {js_last}\n")
+
+def save_sfi_model(S_model, descriptor, outdir, tag):
+
+    save_dict = {
+        "force_coefficients": np.array(S_model.phi),
+        "diffusion_tensor": np.array(S_model.diffusion_average),
+        "force_error": np.array(S_model.force_error),
+        "descriptor": descriptor,
+    }
+
+    np.savez(
+        os.path.join(outdir, f"SFI_model_data_{tag}.npz"),
+        **save_dict
+    )
+save_sfi_model(S_first, descriptor, outdir, "first_half")
+save_sfi_model(S_last, descriptor, outdir, "last_half")
