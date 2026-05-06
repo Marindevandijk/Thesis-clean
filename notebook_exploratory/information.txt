@@ -13,27 +13,7 @@ S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=jnp.a
 # M=5,lam=jnp.array([0.3,3.5,10])) BETTER, 
 # M=5,lam=jnp.array([0.8,3.5,10] bit less good 
 
-exp 15
-0.13935240736186894
-0.08879520380427051
-    def C_func(x):
-        D  = x[0]
-        th1 = x[1]
-        th2 = x[2]
 
-
-        p = radial_basis(D)      
-        f1 = fourier1d_F1(jnp.array([th1]))
-        f2 = fourier1d_F2(jnp.array([th2]))  
-        triple = jnp.einsum('i,j,k->ijk', p, f1[1:5], f2[1:5]).reshape(-1)
-        
-        phi = jnp.concatenate([
-        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
-        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) 
-
-q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
-lam_common = jnp.array([q1, q60, q98])
-print(lam_common)
 
 exp0
 there are already 2 fightbouts before so the distirbutions are really not equal -> is this interesting?
@@ -79,9 +59,12 @@ f2 = fourier1d_F2(jnp.array([th2]))
         jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) #,triple
         return phi 
 
+
 M=4 
 0.11643656862595049
 0.09803036070621352
+
+check with 1: 1:
 
 exp 4 no conclusive winner (check for no fixed points)
 
@@ -153,6 +136,144 @@ S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_c
 exp 9 -> no winner
 
 exp 10
+lam common 
+lam common 
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+
+0.10585607011802334
+0.1036931839157979
+
+exp 11
+0.12421767531659685
+0.106954464217369 6.
+
+0.10100236858660494
+0.121490886198995 - 4.
+
+0.1149282219048967
+0.10919732508350956 -5
+
+0.10239015082153922
+0.122199457608018 -> last one waS 4 INSTEAD OF 5
+
+0.10340767365905812
+0.121758404330935 -> normal
+
+0.15468651589316462
+0.11568931547686 -> 1:5
+
+0.10308896950921699
+0.11812418199910087 -> all
+
+exp 10 0.10585607011802334
+0.1036931839157979
+
+exp 11
+
+0.12434228208990054
+0.1086944164824764
+S_first_exp18, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
+
+        p = radial_basis(D)      
+        f1 = fourier1d_F1(jnp.array([th1]))
+        f2 = fourier1d_F2(jnp.array([th2]))  
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+        return phi 
+
+exp 12
+0.10458418373646422
+0.0891928028014992
+
+S_first_exp18, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
+
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+        return phi 
+
+exp 13
+0.09612213617128902
+0.0836435382924057
+
+S_first_exp18, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
+
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+        return phi 
+
+
+exp 14
+0.1024476851192051
+0.14855952326342
+
+S_first_exp18, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+S_last_exp18, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
+
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) # ,triple, 
+        return phi 
+
+exp 15
+0.13935240736186894
+0.08879520380427051
+    def C_func(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+
+
+        p = radial_basis(D)      
+        f1 = fourier1d_F1(jnp.array([th1]))
+        f2 = fourier1d_F2(jnp.array([th2]))  
+        triple = jnp.einsum('i,j,k->ijk', p, f1[1:5], f2[1:5]).reshape(-1)
+        
+        phi = jnp.concatenate([
+        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
+        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) 
+
+q1, q60, q98 = np.percentile(d_pp_c, [1, 50, 95])
+lam_common = jnp.array([q1, q60, q98])
+print(lam_common)
+
+exp 16 
+no structure
+
+exp 17
+0.13727457623939443
+0.1699715573317201
+cant find good model 
+
+exp 18
+0.10362257017635561
+0.0983347366082218
+
+
+exp 19
+0.09756164662661304
+0.095411496668556
+
+exp 20
+0.11631859411893486
+0.1162762436798658
 
 
 exp 0 
