@@ -16,3 +16,5 @@ thesis_env/
 __pycache__/
 *.pyc
 *.log
+
+Results_new/

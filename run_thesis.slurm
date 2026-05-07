@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=fish_model
-#SBATCH --output=output.log
-#SBATCH --error=error.log
+#SBATCH --output=output8.log
+#SBATCH --error=error8.log
 #SBATCH --time=10:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4

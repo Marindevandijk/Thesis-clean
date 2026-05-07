@@ -414,6 +414,23 @@ js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2])
 all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", exp_id=Exp_id, fight_id=1)
 all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
 
+with open(os.path.join(outdir, "metadata.txt"), "w") as f:
+    f.write(f"path: {path}\n")
+    f.write(f"file: {os.path.basename(path)}\n")
+    f.write(f"Exp_id: {Exp_id}\n")
+    f.write(f"fightnumber_used: {fight_id}\n")
+    f.write(f"fightbout: {fightbout}\n")
+    f.write("\n")
+
+
+    f.write("lambda_common (q1, q50, q95):\n")
+    f.write(f"{np.array(lam_common)}\n")
+
+    f.write("\n")
+    f.write("Jensen-Shannon scores:\n")
+    f.write(f"JS_first_half: {js_first}\n")
+    f.write(f"JS_last_half: {js_last}\n")
+    
 def save_sfi_model(S_model, descriptor, outdir, tag):
 
     save_dict = {
@@ -431,19 +448,3 @@ def save_sfi_model(S_model, descriptor, outdir, tag):
 save_sfi_model(S_first, descriptor, outdir, "first_half")
 save_sfi_model(S_last, descriptor, outdir, "last_half")
 
-with open(os.path.join(outdir, "metadata.txt"), "w") as f:
-    f.write(f"path: {path}\n")
-    f.write(f"file: {os.path.basename(path)}\n")
-    f.write(f"Exp_id: {Exp_id}\n")
-    f.write(f"fightnumber_used: {fight_id}\n")
-    f.write(f"fightbout: {fightbout}\n")
-    f.write("\n")
-
-
-    f.write("lambda_common (q1, q50, q95):\n")
-    f.write(f"{np.array(lam_common)}\n")
-
-    f.write("\n")
-    f.write("Jensen-Shannon scores:\n")
-    f.write(f"JS_first_half: {js_first}\n")
-    f.write(f"JS_last_half: {js_last}\n")
