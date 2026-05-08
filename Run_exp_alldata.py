@@ -313,7 +313,7 @@ def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
     startpoints = np.array(startpoints)
     last_trajs = np.array(last_trajs)
 
-    np.savez_compressed(outdir,F"endpoint_{save_last_n}_trajs_{tag}.npz",last_trajs=last_trajs,startpoints=startpoints,endpoints=all_endpoints)
+    np.savez_compressed(os.path.join(outdir, f"endpoint_{save_last_n}_trajs_{tag}.npz"),last_trajs=last_trajs,startpoints=startpoints,endpoints=all_endpoints)
 
     return all_endpoints,all_forces,startpoints, accept_rate
 
@@ -337,24 +337,23 @@ def Simulation(S_model,x0,dt,N_steps,key):
     return jnp.stack(xs), key
 
 
-path_2 = "/Data/tracking_results/FishTank20200130_153857_tracking_results.h5"
-path_3 ="/Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
-path_5 = "/Data/tracking_results/FishTank20200213_154940_tracking_results.h5"
-path_7 = "/Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
-path_8 = "/Data/tracking_results/FishTank20200218_153008_tracking_results.h5"
-path_10 = "/Data/tracking_results/FishTank20200327_154737_tracking_results.h5"
-path_12 = "/Data/tracking_results/FishTank20200331_162136_tracking_results.h5"
-path_13 ="/Data/tracking_results/FishTank20200520_152810_tracking_results.h5"
-path_15 = "/Data/tracking_results/FishTank20200525_161602_tracking_results.h5"
-path_18 = "/Data/tracking_results/FishTank20200824_151740_tracking_results.h5"
-path_19 = "/Data/tracking_results/FishTank20200828_155504_tracking_results.h5"
-path_20 = "/Data/tracking_results/FishTank20200902_160124_tracking_results.h5"
+path_2 = "Data/tracking_results/FishTank20200130_153857_tracking_results.h5"
+path_3 ="Data/tracking_results/FishTank20200130_181614_tracking_results.h5"
+path_5 = "Data/tracking_results/FishTank20200213_154940_tracking_results.h5"
+#path_7 = "Data/tracking_results/FishTank20200217_160052_tracking_results.h5"
+path_8 = "Data/tracking_results/FishTank20200218_153008_tracking_results.h5"
+path_10 = "Data/tracking_results/FishTank20200327_154737_tracking_results.h5"
+path_12 = "Data/tracking_results/FishTank20200331_162136_tracking_results.h5"
+path_13 ="Data/tracking_results/FishTank20200520_152810_tracking_results.h5"
+path_15 = "Data/tracking_results/FishTank20200525_161602_tracking_results.h5"
+path_18 = "Data/tracking_results/FishTank20200824_151740_tracking_results.h5"
+path_19 = "Data/tracking_results/FishTank20200828_155504_tracking_results.h5"
+path_20 = "Data/tracking_results/FishTank20200902_160124_tracking_results.h5"
 
 paths = {
     2: path_2,
     3: path_3,
     5: path_5,
-    7: path_7,
     8: path_8,
     10: path_10,
     12: path_12,
@@ -372,7 +371,7 @@ time_idx_list = []
 seg_offset = 0
 time_offset = 0
 
-experiments = [2,3,5,7,8,10,12,13,15,18,19,20]
+experiments = [2,3,5,8,10,12,13,15,18,19,20]
 all_first =[]
 for exp in experiments:
     path = paths[exp]
