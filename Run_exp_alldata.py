@@ -253,16 +253,16 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
                 break
     return jnp.stack(xs), (step+1)
 
-def Find_endpoints(S_model,outdir,tag="model", exp_id=3, fight_id=1):
+def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
     accept_rate = []
     all_endpoints =[]
     startpoints = []
     all_forces = []
-    #accepted_trajs = []
+    last_trajs = []
     D_values = np.linspace(1, 8, 15)
     length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
 
-    outpath = os.path.join(outdir, f"Endpoints_exp{exp_id}_fight{fight_id}_{tag}.csv")
+    outpath = os.path.join(outdir, f"Endpoints_{tag}.csv")
 
     accepted = 0
 
@@ -276,16 +276,24 @@ def Find_endpoints(S_model,outdir,tag="model", exp_id=3, fight_id=1):
             "F_d", "F_theta1", "F_theta2","step_used"
         ])
         for d_sim in D_values:
-            
             for theta_i0 in length:
                 for theta_j0 in length:
                     x0 = [d_sim, theta_i0, theta_j0]
                     #x0 = [np.random.uniform(1.0,8.0),np.random.uniform(-np.pi,np.pi),np.random.uniform(-np.pi,np.pi)]
                     traj_sim,step = Simulation_deterministic(S_model, x0, dt=0.01, N_steps=5000,force_tol = 1e-3,n_consecutive = 20,D= None,theta1 =None, theta2 = None,early_stop= True)
-                    final_point= traj_sim[-1]
+
+                    traj_np = np.array(traj_sim)
+                    if len(traj_np) >= save_last_n:
+                        last_part = traj_np[-save_last_n:]
+                    else:
+                        # if stopped early fill in 3000 nan values and then last len of traj fill in
+                        last_part = np.full((save_last_n, 3), np.nan)
+                        last_part[-len(traj_np):] = traj_np
+
+                    last_trajs.append(last_part.astype(np.float32))
+                    final_point = traj_np[-1]
                     force = np.array(S_model.force_ansatz(final_point[None, :])[0])
-                    print("x0 =", x0, " final =", np.round(np.array(final_point), 3), " force =", force)
-                    #if np.linalg.norm(S_model.force_ansatz(final_point[None, :])[0]) < 1e-3:
+                    
                     all_endpoints.append(final_point)
                     all_forces.append(force)
                     startpoints.append(x0)
@@ -303,9 +311,10 @@ def Find_endpoints(S_model,outdir,tag="model", exp_id=3, fight_id=1):
     all_endpoints = np.array(all_endpoints)
     all_forces = np.array(all_forces)
     startpoints = np.array(startpoints)
-    #clustered_endpoints = cluster_endpoints_3d(all_endpoints, decimals=3)
+    last_trajs = np.array(last_trajs)
 
-    print(accept_rate)
+    np.savez_compressed(outdir,F"endpoint_{save_last_n}_trajs_{tag}.npz",last_trajs=last_trajs,startpoints=startpoints,endpoints=all_endpoints)
+
     return all_endpoints,all_forces,startpoints, accept_rate
 
 def Simulation(S_model,x0,dt,N_steps,key):
@@ -399,23 +408,6 @@ X_last  = X_all[half:]
 dpp_first,thetha1_first,thetha2_first = X_first[:,0],wrap_pi(X_first[:,1]),wrap_pi(X_first[:,2])
 dpp_last,thetha1_last,thetha2_last = X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2])
 
-ig, axs = plt.subplots(1, 3, figsize=(15,4))
-axs[0].hist(dpp_first, bins=100, alpha=0.5, density = True,label='First 50%')
-axs[0].hist(dpp_last, bins=100, alpha=0.5,density = True, label='Last 50%')
-axs[0].set_title(r'$d_{pp}$')
-axs[0].legend()
-
-axs[1].hist(thetha1_first, bins=100, alpha=0.5,density = True)
-axs[1].hist(thetha1_last, bins=100, alpha=0.5, density = True)
-axs[1].set_title(r"$\theta_1$")
-axs[1].legend()
-
-axs[2].hist(thetha2_first, bins=100, alpha=0.5, density = True)
-axs[2].hist(thetha2_last, bins=100, alpha=0.5,density = True)
-axs[2].set_title(r"$\theta_2$")
-axs[2].legend()
-plt.show()
-
 q1, q50, q95 = np.percentile(dpp, [1, 50, 95])
 lam_common = jnp.array([q1, q50, q95])
 print(lam_common)
@@ -488,8 +480,8 @@ plt.close()
 js_first = average_js_score(X_first[:,0],wrap_pi(X_first[:,1]),wrap_pi(X_first[:,2]),traj_sim_first)
 js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2]),traj_sim_last)
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", exp_id=Exp_id, fight_id=1)
-all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", exp_id=Exp_id, fight_id=1)
+all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", save_last_n=3000)
+all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", save_last_n =3000)
 
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
