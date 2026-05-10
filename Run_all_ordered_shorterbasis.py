@@ -317,6 +317,7 @@ def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
 
     return all_endpoints,all_forces,startpoints, accept_rate
 
+
 def Simulation(S_model,x0,dt,N_steps,key):
     Diffusion = np.array(S_model.diffusion_average)
     L = jnp.linalg.cholesky(Diffusion)
@@ -335,6 +336,24 @@ def Simulation(S_model,x0,dt,N_steps,key):
         x = x.at[2].set(wrap_pi(x[2]))
 
     return jnp.stack(xs), key
+
+def make_winner_df(tracking_folder):
+    other_info_loadpath = os.path.join(tracking_folder, "winners_losers_inconclusive.h5")
+
+    with h5py.File(other_info_loadpath, "r") as hf:
+        winner_idxs = np.array(hf["winner_idxs"][:])
+        conclusive = np.array(hf["conclusive_winner_loser"][:])
+        already_established = np.array(hf["already_established_dominance"][:])
+
+    df = pd.DataFrame({
+        "EXP_id": np.arange(len(winner_idxs)),
+        "winnerIdx": winner_idxs.astype(int),
+        "conclusive": conclusive.astype(bool),
+        "already_established": already_established.astype(bool),
+    })
+
+    df = df[~df["EXP_id"].isin([4, 9, 16, 21])]
+    return df
 
 
 path_2 = "Data/tracking_results/FishTank20200130_153857_tracking_results.h5"
@@ -364,6 +383,9 @@ paths = {
     20: path_20,
 }
 
+tracking_folder = os.path.dirname(path_2)
+winner_df = make_winner_df(tracking_folder)
+
 X_list = []
 segment_ids_list = []
 time_idx_list = []
@@ -376,14 +398,15 @@ all_first =[]
 for exp in experiments:
     path = paths[exp]
     X_coordinates, fightbout ,exp_id= prepare_data(path,0,True)
+    
+    winner_row = winner_df[winner_df["EXP_id"] == exp_id]
+    id_winner = int(winner_row["winnerIdx"].iloc[0])
+    if id_winner==1:
+        X_coordinates = X_coordinates[:,[1,0],:,:] #put in order [1,0] instead of [0,1]
+    
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
 
-    X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
-        dpp,
-        theta1,
-        theta2
-    )
-
+    X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(dpp,theta1,theta2)
     X_list.append(X_seg)
 
     segment_ids_list.append(segment_ids_seg + seg_offset)
@@ -416,7 +439,7 @@ print(segment_ids_all.shape)
 print(time_idx_all.shape)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_short")
+outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_shorterbasis")
 os.makedirs(outdir, exist_ok=True)
 
 n = int(0.5* len(X_all))
@@ -484,7 +507,7 @@ all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_e
 
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
-    f.write(f"path: {path}\n")
+    f.write(f"length of data : {X_all.shape}\n")
     f.write(f"file: {os.path.basename(path)}\n")
     f.write(f"fightbout: {fightbout}\n")
     f.write("\n")

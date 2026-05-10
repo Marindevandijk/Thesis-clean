@@ -400,7 +400,7 @@ for exp in experiments:
     X_coordinates, fightbout ,exp_id= prepare_data(path,0,True)
     
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
-    id_winner = int(winner_row["winneridx"].iloc[0])
+    id_winner = int(winner_row["winnerIdx"].iloc[0])
     if id_winner==1:
         X_coordinates = X_coordinates[:,[1,0],:,:] #put in order [1,0] instead of [0,1]
     

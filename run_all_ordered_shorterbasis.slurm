@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=fish_expall
-#SBATCH --output=output_expall_ord_short.log
-#SBATCH --error=error_expall_ord_short.log
+#SBATCH --output=output_expall_order.log
+#SBATCH --error=error_expall_order.log
 #SBATCH --time=10:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -15,4 +15,4 @@ module load Python/3.11.3-GCCcore-12.3.0
 
 source thesis_env/bin/activate
 
-python run_all_ordered_shorterbasis.py
+python Run_all_ordered_shorterbasis.py
