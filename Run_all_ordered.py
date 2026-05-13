@@ -259,8 +259,8 @@ def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
     startpoints = []
     all_forces = []
     last_trajs = []
-    D_values = np.linspace(1, 8, 15)
-    length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
+    D_values = np.linspace(1, 8, 25)
+    length = np.linspace(-np.pi, np.pi, 20,endpoint = False)
 
     outpath = os.path.join(outdir, f"Endpoints_{tag}.csv")
 
@@ -439,7 +439,7 @@ print(segment_ids_all.shape)
 print(time_idx_all.shape)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered")
+outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_morepoints")
 os.makedirs(outdir, exist_ok=True)
 
 n = int(0.5* len(X_all))
