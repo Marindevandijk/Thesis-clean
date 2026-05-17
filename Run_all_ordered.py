@@ -450,7 +450,7 @@ X_first,t_first = X_all[:n],time_idx_all[:n]
 X_last,t_last = X_all[n:],time_idx_all[n:]
 
 #S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-S_first, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+#S_first, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
 S_last, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
 
 
@@ -502,7 +502,7 @@ plt.close()
 js_first = average_js_score(X_first[:,0],wrap_pi(X_first[:,1]),wrap_pi(X_first[:,2]),traj_sim_first)
 js_last = average_js_score(X_last[:,0],wrap_pi(X_last[:,1]),wrap_pi(X_last[:,2]),traj_sim_last)
 
-all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", save_last_n=3000)
+#all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", save_last_n=3000)
 all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", save_last_n =3000)
 
 
