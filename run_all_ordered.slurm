@@ -2,7 +2,7 @@
 #SBATCH --job-name=fish_expall
 #SBATCH --output=output_expall_order.log
 #SBATCH --error=error_expall_order.log
-#SBATCH --time=18:00:00
+#SBATCH --time=48:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
