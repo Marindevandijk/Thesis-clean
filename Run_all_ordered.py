@@ -450,7 +450,7 @@ X_first,t_first = X_all[:n],time_idx_all[:n]
 X_last,t_last = X_all[n:],time_idx_all[n:]
 
 #S_full, descriptor = Run_Force_inference(X_full, t_full,K=2, M=4,lam=jnp.array([0.77, 2.8, 7.1]))
-#S_first, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
+S_first, descriptor = Run_Force_inference(X_first, t_first,K=3, M=4,lam=lam_common)
 S_last, descriptor = Run_Force_inference(X_last, t_last,K=3, M=4,lam=lam_common)
 
 
