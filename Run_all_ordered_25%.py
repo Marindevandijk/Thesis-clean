@@ -383,56 +383,125 @@ paths = {
     20: path_20,
 }
 
+
+experiments = [2,3,5,8,10,12,13,15,18,19,20]
 tracking_folder = os.path.dirname(path_2)
 winner_df = make_winner_df(tracking_folder)
 
-experiments = [2,3,5,8,10,12,13,15,18,19,20]
+X_q1_list = []
+X_q2_list = []
+X_q3_list = []
+X_q4_list = []
 
-X_q_lists = [[], [], [], []]  
+segment_ids_q1_list = []
+segment_ids_q2_list = []
+segment_ids_q3_list = []
+segment_ids_q4_list = []
+
+time_idx_q1_list = []
+time_idx_q2_list = []
+time_idx_q3_list = []
+time_idx_q4_list = []
+
+seg_offset_q1 = 0
+seg_offset_q2 = 0
+seg_offset_q3 = 0
+seg_offset_q4 = 0
+
+time_offset_q1 = 0
+time_offset_q2 = 0
+time_offset_q3 = 0
+time_offset_q4 = 0
+
 for exp in experiments:
     path = paths[exp]
+
     X_coordinates, fightbout, exp_id = prepare_data(path, 0, True)
-    
+
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
     id_winner = int(winner_row["winnerIdx"].iloc[0])
 
     if id_winner == 1:
-        X_coordinates = X_coordinates[:, [1, 0], :, :]  
-    
+        X_coordinates = X_coordinates[:, [1, 0], :, :]
+
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
+
+    # IMPORTANT: build segmented data on full fightbout first
     X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
         dpp, theta1, theta2
     )
 
-    n_exp = len(X_seg)
-    q = n_exp // 4
+    n = len(X_seg)
+    q1_end = n // 4
+    q2_end = n // 2
+    q3_end = 3 * n // 4
 
-    X_q_lists[0].append(X_seg[:q])
-    X_q_lists[1].append(X_seg[q:2*q])
-    X_q_lists[2].append(X_seg[2*q:3*q])
-    X_q_lists[3].append(X_seg[3*q:])
+    X_seg_q1 = X_seg[:q1_end]
+    time_idx_seg_q1 = time_idx_seg[:q1_end] - time_idx_seg[:q1_end][0]
+    segment_ids_seg_q1 = segment_ids_seg[:q1_end]
 
-X_q1 = np.vstack(X_q_lists[0])
-X_q2 = np.vstack(X_q_lists[1])
-X_q3 = np.vstack(X_q_lists[2])
-X_q4 = np.vstack(X_q_lists[3])
+    X_seg_q2 = X_seg[q1_end:q2_end]
+    time_idx_seg_q2 = time_idx_seg[q1_end:q2_end] - time_idx_seg[q1_end:q2_end][0]
+    segment_ids_seg_q2 = segment_ids_seg[q1_end:q2_end]
 
-def make_time_idx_from_list(X_list):
-    time_list = []
-    offset = 0
-    for X in X_list:
-        t = np.arange(len(X)) + offset
-        time_list.append(t)
-        offset += len(X) + 1
-    return np.concatenate(time_list)
+    X_seg_q3 = X_seg[q2_end:q3_end]
+    time_idx_seg_q3 = time_idx_seg[q2_end:q3_end] - time_idx_seg[q2_end:q3_end][0]
+    segment_ids_seg_q3 = segment_ids_seg[q2_end:q3_end]
 
-t_q1 = make_time_idx_from_list(X_q_lists[0])
-t_q2 = make_time_idx_from_list(X_q_lists[1])
-t_q3 = make_time_idx_from_list(X_q_lists[2])
-t_q4 = make_time_idx_from_list(X_q_lists[3])
+    X_seg_q4 = X_seg[q3_end:]
+    time_idx_seg_q4 = time_idx_seg[q3_end:] - time_idx_seg[q3_end:][0]
+    segment_ids_seg_q4 = segment_ids_seg[q3_end:]
+
+    # q1
+    X_q1_list.append(X_seg_q1)
+    segment_ids_q1_list.append(segment_ids_seg_q1 + seg_offset_q1)
+    time_idx_q1_list.append(time_idx_seg_q1 + time_offset_q1)
+
+    seg_offset_q1 += segment_ids_seg_q1.max() + 1
+    time_offset_q1 += time_idx_seg_q1.max() + 1
+
+    # q2
+    X_q2_list.append(X_seg_q2)
+    segment_ids_q2_list.append(segment_ids_seg_q2 + seg_offset_q2)
+    time_idx_q2_list.append(time_idx_seg_q2 + time_offset_q2)
+
+    seg_offset_q2 += segment_ids_seg_q2.max() + 1
+    time_offset_q2 += time_idx_seg_q2.max() + 1
+
+    # q3
+    X_q3_list.append(X_seg_q3)
+    segment_ids_q3_list.append(segment_ids_seg_q3 + seg_offset_q3)
+    time_idx_q3_list.append(time_idx_seg_q3 + time_offset_q3)
+
+    seg_offset_q3 += segment_ids_seg_q3.max() + 1
+    time_offset_q3 += time_idx_seg_q3.max() + 1
+
+    # q4
+    X_q4_list.append(X_seg_q4)
+    segment_ids_q4_list.append(segment_ids_seg_q4 + seg_offset_q4)
+    time_idx_q4_list.append(time_idx_seg_q4 + time_offset_q4)
+
+    seg_offset_q4 += segment_ids_seg_q4.max() + 1
+    time_offset_q4 += time_idx_seg_q4.max() + 1
+
+
+X_q1 = np.vstack(X_q1_list)
+segment_ids_q1 = np.concatenate(segment_ids_q1_list)
+time_idx_q1 = np.concatenate(time_idx_q1_list)
+
+X_q2 = np.vstack(X_q2_list)
+segment_ids_q2 = np.concatenate(segment_ids_q2_list)
+time_idx_q2 = np.concatenate(time_idx_q2_list)
+
+X_q3 = np.vstack(X_q3_list)
+segment_ids_q3 = np.concatenate(segment_ids_q3_list)
+time_idx_q3 = np.concatenate(time_idx_q3_list)
+
+X_q4 = np.vstack(X_q4_list)
+segment_ids_q4 = np.concatenate(segment_ids_q4_list)
+time_idx_q4 = np.concatenate(time_idx_q4_list)
 
 X_all_quarters = np.vstack([X_q1, X_q2, X_q3, X_q4])
-
 dpp_all = X_all_quarters[:, 0]
 
 q01, q50, q95 = np.percentile(dpp_all, [1, 50, 95])
@@ -445,7 +514,7 @@ print("X_q4:", X_q4.shape)
 print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_quarters")
+outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_quarters_corrected")
 os.makedirs(outdir, exist_ok=True)
 
 i_q1 = np.random.randint(0,len(X_q1))
@@ -460,10 +529,10 @@ x0_q4 = X_q4[i_q4]
 
 key = random.PRNGKey(0)
 
-S_q1, descriptor = Run_Force_inference(X_q1, t_q1, K=3, M=4,lam=lam_common)
-S_q2, descriptor = Run_Force_inference(X_q2, t_q2, K=3, M=4, lam=lam_common)
-S_q3, descriptor= Run_Force_inference(X_q3, t_q3, K=3, M=4, lam=lam_common)
-S_q4, descriptor = Run_Force_inference(X_q4, t_q4, K=3, M=4, lam=lam_common)
+S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam=lam_common)
+S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam=lam_common)
+S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam=lam_common)
+S_q4, descriptor = Run_Force_inference(X_q4, time_idx_q4, K=3, M=4, lam=lam_common)
 
 traj_sim_q1, key = Simulation(S_q1, x0_q1, dt=0.01, N_steps=500000, key=key)
 traj_sim_q2, key = Simulation(S_q2, x0_q2, dt=0.01, N_steps=500000, key=key)
@@ -474,6 +543,7 @@ traj_sim_q1_np = np.array(traj_sim_q1)
 traj_sim_q2_np = np.array(traj_sim_q2)
 traj_sim_q3_np = np.array(traj_sim_q3)
 traj_sim_q4_np = np.array(traj_sim_q4)
+
 
 np.savez(
     os.path.join(outdir, "stochastic_simulated_trajectories_quarters.npz"),

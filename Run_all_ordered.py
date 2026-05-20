@@ -369,6 +369,7 @@ path_18 = "Data/tracking_results/FishTank20200824_151740_tracking_results.h5"
 path_19 = "Data/tracking_results/FishTank20200828_155504_tracking_results.h5"
 path_20 = "Data/tracking_results/FishTank20200902_160124_tracking_results.h5"
 
+
 paths = {
     2: path_2,
     3: path_3,
@@ -387,61 +388,116 @@ tracking_folder = os.path.dirname(path_2)
 winner_df = make_winner_df(tracking_folder)
 
 experiments = [2,3,5,8,10,12,13,15,18,19,20]
+
 X_first_list = []
 X_last_list = []
+
+segment_ids_first_list = []
+segment_ids_last_list = []
+
+time_idx_first_list = []
+time_idx_last_list = []
+
+seg_offset_first = 0
+seg_offset_last = 0
+
+time_offset_first = 0
+time_offset_last = 0
+
 for exp in experiments:
     path = paths[exp]
-    X_coordinates, fightbout ,exp_id= prepare_data(path,0,True)
-    
+
+    X_coordinates, fightbout, exp_id = prepare_data(path, 0, True)
+
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
     id_winner = int(winner_row["winnerIdx"].iloc[0])
-    if id_winner==1:
-        X_coordinates = X_coordinates[:,[1,0],:,:] #put in order [1,0] instead of [0,1]
-    
+
+    if id_winner == 1:
+        X_coordinates = X_coordinates[:, [1, 0], :, :]
+
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
-    X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(dpp, theta1, theta2)
 
-    half_exp = len(X_seg) // 2
+    # IMPORTANT: build segmented data on the full fightbout first
+    X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
+        dpp, theta1, theta2
+    )
 
-    X_first_list.append(X_seg[:half_exp])
-    X_last_list.append(X_seg[half_exp:])
+    n = len(X_seg)
+    half = n // 2
+
+    X_seg_first = X_seg[:half]
+    time_idx_seg_first = time_idx_seg[:half]
+    segment_ids_seg_first = segment_ids_seg[:half]
+
+    X_seg_last = X_seg[half:]
+    time_idx_seg_last = time_idx_seg[half:]
+    segment_ids_seg_last = segment_ids_seg[half:]
+
+    # shift each piece to start at 0, but keep internal gaps
+    time_idx_seg_first = time_idx_seg_first - time_idx_seg_first[0]
+    time_idx_seg_last = time_idx_seg_last - time_idx_seg_last[0]
+
+    # store first half
+    X_first_list.append(X_seg_first)
+    segment_ids_first_list.append(segment_ids_seg_first + seg_offset_first)
+    time_idx_first_list.append(time_idx_seg_first + time_offset_first)
+
+    seg_offset_first += segment_ids_seg_first.max() + 1
+    time_offset_first += time_idx_seg_first.max() + 1
+
+    # store last half
+    X_last_list.append(X_seg_last)
+    segment_ids_last_list.append(segment_ids_seg_last + seg_offset_last)
+    time_idx_last_list.append(time_idx_seg_last + time_offset_last)
+
+    seg_offset_last += segment_ids_seg_last.max() + 1
+    time_offset_last += time_idx_seg_last.max() + 1
+
 
 X_first = np.vstack(X_first_list)
+segment_ids_first = np.concatenate(segment_ids_first_list)
+time_idx_first = np.concatenate(time_idx_first_list)
+
 X_last = np.vstack(X_last_list)
+segment_ids_last = np.concatenate(segment_ids_last_list)
+time_idx_last = np.concatenate(time_idx_last_list)
 
-def make_time_idx_from_list(X_list):
-    time_list = []
-    offset = 0
-    for X in X_list:
-        t = np.arange(len(X)) + offset
-        time_list.append(t)
-        offset += len(X) + 1
-    return np.concatenate(time_list)
+dpp_first = X_first[:, 0]
+theta1_first = wrap_pi(X_first[:, 1])
+theta2_first = wrap_pi(X_first[:, 2])
 
-t_first = make_time_idx_from_list(X_first_list)
-t_last = make_time_idx_from_list(X_last_list)
-
-X_all_corrected = np.vstack([X_first, X_last])
-
-dpp = X_all_corrected[:, 0]
-theta1 = wrap_pi(X_all_corrected[:, 1])
-theta2 = wrap_pi(X_all_corrected[:, 2])
+dpp_last = X_last[:, 0]
+theta1_last = wrap_pi(X_last[:, 1])
+theta2_last = wrap_pi(X_last[:, 2])
 
 print("X_first:", X_first.shape)
 print("X_last:", X_last.shape)
-print("t_first:", t_first.shape)
-print("t_last:", t_last.shape)
 
-q01, q50, q95 = np.percentile(dpp, [1, 50, 95])
+print("time_idx_first:", time_idx_first.shape)
+print("time_idx_last:", time_idx_last.shape)
+
+print("segments first:", len(np.unique(segment_ids_first)))
+print("segments last:", len(np.unique(segment_ids_last)))
+
+X_all_halves = np.vstack([X_first, X_last])
+dpp_all = X_all_halves[:, 0]
+
+q01, q50, q95 = np.percentile(dpp_all, [1, 50, 95])
 lam_common = jnp.array([q01, q50, q95])
-print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_halves")
+outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_halves_corrected")
 os.makedirs(outdir, exist_ok=True)
 
-S_first, descriptor = Run_Force_inference(X_first, t_first, K=3, M=4, lam=lam_common)
-S_last, descriptor = Run_Force_inference(X_last, t_last, K=3, M=4, lam=lam_common)
+S_first, descriptor = Run_Force_inference(
+    X_first,
+    time_idx_first,
+    K=3,
+    M=4,
+    lam=lam_common
+)
+
+S_last, descriptor = Run_Force_inference(X_last,time_idx_last,K=3,M=4,lam=lam_common)
 
 d_pp_c, theta_i_c, theta_j_c = clean_data(dpp, theta1, theta2)
 
@@ -452,7 +508,6 @@ x0_first = X_first[i_first]
 x0_last  = X_last[i_last]
 
 key = random.PRNGKey(0)
-#traj_sim_full, key = Simulation(S_full, x0, dt=0.01, N_steps=500000, key=key)
 traj_sim_first, key = Simulation(S_first, x0_first, dt=0.01, N_steps=500000, key=key)
 traj_sim_last, key = Simulation(S_last, x0_last, dt=0.01, N_steps=500000, key=key)
 
@@ -496,17 +551,17 @@ all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_e
 
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
-    f.write(f"length of data : {X_all_corrected.shape}\n")
+    f.write(f"length of data : {X_all_halves.shape}\n")
     f.write(f"experiments: {experiments}\n")
     f.write("\n")
 
     f.write(f"X_first shape: {X_first.shape}\n")
     f.write(f"X_last shape: {X_last.shape}\n")
-    f.write(f"X_all_corrected shape: {X_all_corrected.shape}\n")
-    f.write(f"t_first shape: {t_first.shape}\n")
-    f.write(f"t_last shape: {t_last.shape}\n")
+    f.write(f"X_all_corrected shape: {X_all_halves.shape}\n")
+    #f.write(f"t_first shape: {t_first.shape}\n")
+    #f.write(f"t_last shape: {t_last.shape}\n")
     f.write("\n")
-    
+
     f.write("lambda_common (q1, q50, q95):\n")
     f.write(f"{np.array(lam_common)}\n")
 
