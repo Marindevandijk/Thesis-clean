@@ -259,8 +259,8 @@ def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
     startpoints = []
     all_forces = []
     last_trajs = []
-    D_values = np.linspace(1, 8, 25)
-    length = np.linspace(-np.pi, np.pi, 20,endpoint = False)
+    D_values = np.linspace(1, 8, 15)
+    length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
 
     outpath = os.path.join(outdir, f"Endpoints_{tag}.csv")
 
