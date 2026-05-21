@@ -514,7 +514,7 @@ print("X_q4:", X_q4.shape)
 print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_quarters_corrected")
+outdir = os.path.join(base_dir, "Results", "All_fightbouts_ordered_perfight_quarters_corrected2")
 os.makedirs(outdir, exist_ok=True)
 
 i_q1 = np.random.randint(0,len(X_q1))
@@ -615,13 +615,6 @@ with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write(f"JS_q3: {js_q3}\n")
     f.write(f"JS_q4: {js_q4}\n")
 
-key = random.PRNGKey(0)
-all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
-all_endpoints_q2,all_forces_q2, startpoints_q2, accept_rate_q2 = Find_endpoints(S_q2, outdir, tag="q2", save_last_n=3000)
-all_endpoints_q3, all_forces_q3, startpoints_q3, accept_rate_q3 = Find_endpoints(S_q3, outdir, tag="q3", save_last_n=3000)
-all_endpoints_q4, all_forces_q4, startpoints_q4, accept_rate_q4 = Find_endpoints(S_q4, outdir, tag="q4", save_last_n=3000)
-
-
 def save_sfi_model(S_model, descriptor, outdir, tag):
 
     save_dict = {
@@ -640,3 +633,11 @@ save_sfi_model(S_q1, descriptor, outdir, "q1")
 save_sfi_model(S_q2, descriptor, outdir, "q2")
 save_sfi_model(S_q3, descriptor, outdir, "q3")
 save_sfi_model(S_q4, descriptor, outdir, "q4")
+
+key = random.PRNGKey(0)
+#all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
+#all_endpoints_q2,all_forces_q2, startpoints_q2, accept_rate_q2 = Find_endpoints(S_q2, outdir, tag="q2", save_last_n=3000)
+all_endpoints_q3, all_forces_q3, startpoints_q3, accept_rate_q3 = Find_endpoints(S_q3, outdir, tag="q3", save_last_n=3000)
+all_endpoints_q4, all_forces_q4, startpoints_q4, accept_rate_q4 = Find_endpoints(S_q4, outdir, tag="q4", save_last_n=3000)
+
+
