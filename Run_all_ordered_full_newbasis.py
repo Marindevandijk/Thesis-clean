@@ -586,5 +586,5 @@ def save_sfi_model(S_model, descriptor, outdir, tag):
         **save_dict
     )
 
-save_sfi_model(S_full, descriptor_full, outdir, "first_half")
+save_sfi_model(S_full, descriptor_full, outdir, "full")
 
