@@ -554,6 +554,7 @@ all_endpoints_full, all_forces_full, startpoints_full, accept_rate_full = Find_e
     tag="full",
     save_last_n=3000
 )
+lam_full = jnp.array([0.7804654, 2.2657896, 9.029227])
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("FULL DATASET MODEL\n")
