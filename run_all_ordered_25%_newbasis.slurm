@@ -15,4 +15,4 @@ module load Python/3.11.3-GCCcore-12.3.0
 
 source thesis_env/bin/activate
 
-python -u Run_all_ordered_25%_newbasis.py.
+python -u Run_all_ordered_25%_newbasis.py
