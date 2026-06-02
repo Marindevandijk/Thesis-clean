@@ -321,3 +321,205 @@ exp 21 dominance alredy established
 25k
 
 
+
+js 0.1266 #lam=jnp.array(([0.4,5,20]))) ef C_function(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+        k =2
+
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        ang = jnp.array([
+        1.0,
+        f1,
+        f2, f1*f2,
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+        #jnp.sin(3.0 * th1),
+        #jnp.sin(3.0 * th2),
+        jnp.cos( th1),
+        jnp.cos( th2),
+        #jnp.cos( 2*th1),
+        #jnp.cos(2* th2),
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+    ])
+
+
+0.11952496893300864 lam=jnp.array(([0.3,4,12])))
+
+    def C_function(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+        k =2
+
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        ang = jnp.array([
+        1.0,
+        f1,
+        f2, 
+        #f1*f2,
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+        jnp.sin(4.0 * th1),
+        jnp.sin(4.0 * th2),
+        #jnp.sin(3.0 * th1),
+        #jnp.sin(3.0 * th2),
+        jnp.cos( th1),
+        jnp.cos( th2),
+        #jnp.cos(2* th1),
+        #jnp.cos(2* th2),
+        #jnp.cos( 2*th1),
+        #jnp.cos(2* th2),
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+    ])
+
+lam =jnp.array([0.3,4,8]))
+ js = 0.11590248412951143
+
+     def C_function(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+        k =1.5
+
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        ang = jnp.array([
+        1.0,
+        f1,
+        f2, 
+        f1*f2,
+        jnp.sin(th2)* f1,
+        jnp.sin(th1)* f2,
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+        jnp.sin(4.0 * th1),
+        jnp.sin(4.0 * th2),
+        jnp.cos( th1),
+        jnp.cos( th2),
+
+    ])
+
+
+        triple = jnp.einsum("i,j->ij", p, ang).reshape(-1)
+        #phi = jnp.concatenate([triple,jnp.outer(jnp.sin(th2), f1).reshape(-1),jnp.outer(f2,jnp.sin(th1)).reshape(-1)], axis=0)
+        return triple
+
+
+JS full: 0.11078216624152248
+lam =jnp.array([0.3,2.7,8]))
+
+ def C_function(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+        k =2
+
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        ang = jnp.array([
+        1.0,
+        f1,
+        f2, 
+        #f1*f2,
+        jnp.sin(2*th2)* f1,
+        jnp.sin(2*th1)* f2,
+
+
+        
+
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+        jnp.sin(4.0 * th1),
+        jnp.sin(4.0 * th2),
+        jnp.cos( th1),
+        jnp.cos( th2),
+        #jnp.cos(2* th1),
+        #jnp.cos(2* th2),
+        #jnp.cos( 2*th1),
+        #jnp.cos(2* th2),
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+        #jnp.cos(th1) * jnp.cos(th2),
+        #jnp.sin(2.0 * th1) * jnp.sin(2.0 * th2)
+        #jnp.sin(th1) * (1.0 + jnp.cos(th1)),
+        #jnp.sin(th2) * (1.0 + jnp.cos(th2))
+        #f1 * jnp.cos(2.0 * th1),
+        #f2 * jnp.cos(2.0 * th2) 
+    ])
+
+
+        triple = jnp.einsum("i,j->ij", p, ang).reshape(-1)
+        #phi = jnp.concatenate([triple,jnp.outer(jnp.sin(th2), f1).reshape(-1),jnp.outer(f2,jnp.sin(th1)).reshape(-1)], axis=0)
+        return triple
+    
+    js = 0.10790763230142676 lam = jnp.array([0.7804654, 2.2657896, 9.029227])
+
+      def C_function(x):
+        D  = x[0]
+        th1 = x[1]
+        th2 = x[2]
+        k =2.0
+
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        ang = jnp.array([
+        1.0,
+        f1,
+        f2, 
+        #f1*f2,
+        #jnp.sin(th2)* f1,
+        #jnp.sin(th1)* f2,
+        jnp.cos(th2)* f1,
+        jnp.cos(th1)* f2,
+
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+        #jnp.sin(4.0 * th1),
+        #jnp.sin(4.0 * th2),
+        jnp.cos( th1),
+        jnp.cos( th2),
+        #jnp.cos(2* th1),
+        #jnp.cos(2* th2),
+        #jnp.cos( 2*th1),
+        #jnp.cos(2* th2),
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+        #f1 * (1.0 - jnp.cos(th1)),
+        #f2 * (1.0 - jnp.cos(th2))
+        #jnp.cos(th1) * jnp.cos(th2),
+        #jnp.sin(2.0 * th1) * jnp.sin(2.0 * th2)
+        #jnp.sin(th1) * (1.0 + jnp.cos(th1)),
+        #jnp.sin(th2) * (1.0 + jnp.cos(th2))
+        #f1 * jnp.cos(2.0 * th1),
+        #f2 * jnp.cos(2.0 * th2) 
+    ])
+
+
+        triple = jnp.einsum("i,j->ij", p, ang).reshape(-1)
+        #phi = jnp.concatenate([triple,jnp.outer(jnp.sin(th2), f1).reshape(-1),jnp.outer(f2,jnp.sin(th1)).reshape(-1)], axis=0)
+        return triple
