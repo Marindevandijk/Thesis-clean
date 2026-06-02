@@ -176,6 +176,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     def smooth_gate(z, sharpness=8.0):
         return 0.5 * (1.0 + jnp.tanh(sharpness * z))
 
+
     def C_function2(x):
         D  = x[0]
         th1 = x[1]
@@ -183,12 +184,12 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         k =1.7
 
         p =  radial_basis(D) 
-        f1 = jnp.tanh(k * jnp.sin(th1))
-        f2 = jnp.tanh(k * jnp.sin(th2))
+        f1 = jnp.tanh(k*jnp.sin(th1))
+        f2 = jnp.tanh(k *jnp.sin(th2))
         a1 = jnp.abs(wrap_pi(th1))
         a2 = jnp.abs(wrap_pi(th2))
 
-        s = 6.0
+        s = 6
 
         front1 = smooth_gate((jnp.pi/4) - a1, s)
         back1  = smooth_gate(a1 - (3*jnp.pi/4), s)
@@ -201,14 +202,16 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         ang = jnp.array([
         1.0,
         # broad self angular response
-        f1,
-        f2,
+        #f1,
+        #f2,
 
         # opponent front/back modulation
         front2 * f1,
         back2  * f1,
         front1 * f2,
         back1  * f2,
+        side1 * f2,
+        side2  * f1,
 
         # side/center/side angular structure
         jnp.sin(2.0 * th1),
@@ -216,14 +219,14 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         jnp.sin(3.0 * th1),
         jnp.sin(3.0 * th2),
 
-        # distance/facing contribution
+        # distance/facing contribution, probably useful for F_D
         jnp.cos(th1),
         jnp.cos(th2),
     ])
 
         phi = jnp.einsum("i,j->ij", p, ang).reshape(-1)
         return phi
-    
+     
     S = SFI.OverdampedLangevinInference(traj)
     S.compute_diffusion_constant(method="MSD")
     (funcs_and_grad, descriptor) = SFI.OLI_bases.basis_selector(
@@ -544,7 +547,7 @@ print("X_q4:", X_q4.shape)
 print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_new", "All_quarters_newbasis_checksegment")
+outdir = os.path.join(base_dir, "Results_new", "All_quarters_newbasis_checksegment_withside")
 os.makedirs(outdir, exist_ok=True)
 
 i_q1 = np.random.randint(0,len(X_q1))
@@ -559,10 +562,10 @@ x0_q4 = X_q4[i_q4]
 
 key = random.PRNGKey(0)
 
-S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam = jnp.array([0.7804654, 2.2657896, 9.029227]))
-S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam = jnp.array([0.7804654, 2.2657896, 9.029227]))
-S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam = jnp.array([0.7804654, 2.2657896, 9.029227]))
-S_q4, descriptor = Run_Force_inference(X_q4, time_idx_q4, K=3, M=4, lam = jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam =lam_common) #jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q4, descriptor = Run_Force_inference(X_q4, time_idx_q4, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
 
 traj_sim_q1, key = Simulation(S_q1, x0_q1, dt=0.01, N_steps=500000, key=key)
 traj_sim_q2, key = Simulation(S_q2, x0_q2, dt=0.01, N_steps=500000, key=key)

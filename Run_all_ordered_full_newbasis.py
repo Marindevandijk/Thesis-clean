@@ -176,6 +176,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     def smooth_gate(z, sharpness=8.0):
         return 0.5 * (1.0 + jnp.tanh(sharpness * z))
 
+
     def C_function2(x):
         D  = x[0]
         th1 = x[1]
@@ -183,12 +184,12 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         k =1.7
 
         p =  radial_basis(D) 
-        f1 = jnp.tanh(k * jnp.sin(th1))
-        f2 = jnp.tanh(k * jnp.sin(th2))
+        f1 = jnp.tanh(k*jnp.sin(th1))
+        f2 = jnp.tanh(k *jnp.sin(th2))
         a1 = jnp.abs(wrap_pi(th1))
         a2 = jnp.abs(wrap_pi(th2))
 
-        s = 6.0
+        s = 6
 
         front1 = smooth_gate((jnp.pi/4) - a1, s)
         back1  = smooth_gate(a1 - (3*jnp.pi/4), s)
@@ -197,26 +198,20 @@ def Run_Force_inference(X,time_idx,K,M,lam):
         front2 = smooth_gate((jnp.pi/4) - a2, s)
         back2  = smooth_gate(a2 - (3*jnp.pi/4), s)
         side2  = 1.0 - front2 - back2
-        """
-        front1 = (a1 < jnp.pi / 4.0).astype(float)
 
-        back1  = (a1 > 3.0 * jnp.pi / 4.0).astype(float)
-
-        front2 = (a2 < jnp.pi / 4.0).astype(float)
-
-        back2  = (a2 > 3.0 * jnp.pi / 4.0).astype(float)
-        """
         ang = jnp.array([
         1.0,
         # broad self angular response
-        f1,
-        f2,
+        #f1,
+        #f2,
 
         # opponent front/back modulation
         front2 * f1,
         back2  * f1,
         front1 * f2,
         back1  * f2,
+        side1 * f2,
+        side2  * f1,
 
         # side/center/side angular structure
         jnp.sin(2.0 * th1),
@@ -231,7 +226,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
 
         phi = jnp.einsum("i,j->ij", p, ang).reshape(-1)
         return phi
-    
+        
     S = SFI.OverdampedLangevinInference(traj)
     S.compute_diffusion_constant(method="MSD")
     (funcs_and_grad, descriptor) = SFI.OLI_bases.basis_selector(
@@ -279,7 +274,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
         drift = S.force_ansatz(x[None, :])[0]
         x = x + drift * dt
 
-        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 20.0))
+        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 30.0))
         x = x.at[1].set(theta1 if theta1 is not None else wrap_pi(x[1]))
         x = x.at[2].set(theta2 if theta2 is not None else wrap_pi(x[2]))
 
@@ -482,10 +477,12 @@ print("D range:", np.nanmin(dpp_full), np.nanmax(dpp_full))
 
 
 
-#lam_full = jnp.array([0.3, 4.0, 12.0])
+q01, q50, q95 = np.percentile(dpp_full, [1, 50, 95])
+lam_full = jnp.array([q01, q50, q95])
+
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_new", "All_fightbouts_ordered_perfight_full_newbasis")
+outdir = os.path.join(base_dir, "Results_new", "All_fightbouts_ordered_perfight_full_newbasis_withside")
 os.makedirs(outdir, exist_ok=True)
 
 S_full, descriptor_full = Run_Force_inference(
@@ -493,7 +490,7 @@ S_full, descriptor_full = Run_Force_inference(
     time_idx_full,
     K=3,
     M=4,
-    lam=jnp.array([0.7804654, 2.2657896, 9.029227]))
+    lam=lam_full)
 
 key = random.PRNGKey(0)
 
@@ -515,8 +512,6 @@ np.savez(
     traj_sim_full=traj_sim_full_np,
     x0_full=x0_full,
 )
-
-
 
 fig, axs = plt.subplots(1, 3, figsize=(15,4))
 
@@ -554,7 +549,7 @@ all_endpoints_full, all_forces_full, startpoints_full, accept_rate_full = Find_e
     tag="full",
     save_last_n=3000
 )
-lam_full = jnp.array([0.7804654, 2.2657896, 9.029227])
+
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("FULL DATASET MODEL\n")
