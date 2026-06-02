@@ -54,7 +54,7 @@ def prepare_data(path,fightnumber = 0,infight =True):
 
 
 def wrap_pi(a):
-    return (a + np.pi) % (2*np.pi) - np.pi
+    return (a + jnp.pi) % (2*jnp.pi) - jnp.pi
 
 def calculate_theta(fish0,fish1):
     vector_fish0 = (fish0[:,0,:] - fish0[:,1,:]) # difference in heading of head and pec
@@ -173,26 +173,61 @@ def Run_Force_inference(X,time_idx,K,M,lam):
 
         return jnp.exp(-D / lam)#p_exp #jnp.concatenate([p_poly,p_exp])
 
-    def C_func(x):
+    def smooth_gate(z, sharpness=8.0):
+        return 0.5 * (1.0 + jnp.tanh(sharpness * z))
+
+    def C_function2(x):
         D  = x[0]
         th1 = x[1]
         th2 = x[2]
+        k =1.7
 
-        p  = poly_1d(jnp.array([D]))
-        p = radial_basis(D)      
-        f1 = fourier1d_F1(jnp.array([th1]))
-        f2 = fourier1d_F2(jnp.array([th2]))  
-        triple = jnp.einsum('i,j,k->ijk', p, f1[1:], f2[1:]).reshape(-1)
-        
-        phi = jnp.concatenate([
-        p, f1, f2, jnp.outer(p, f1[1:]).reshape(-1),jnp.outer(f2[1:], f1[1:]).reshape(-1),
-        jnp.outer(p, f2[1:]).reshape(-1),triple], axis=0) #,triple
-        return phi 
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k * jnp.sin(th1))
+        f2 = jnp.tanh(k * jnp.sin(th2))
+        a1 = jnp.abs(wrap_pi(th1))
+        a2 = jnp.abs(wrap_pi(th2))
+
+        s = 6.0
+
+        front1 = smooth_gate((jnp.pi/4) - a1, s)
+        back1  = smooth_gate(a1 - (3*jnp.pi/4), s)
+        side1  = 1.0 - front1 - back1
+
+        front2 = smooth_gate((jnp.pi/4) - a2, s)
+        back2  = smooth_gate(a2 - (3*jnp.pi/4), s)
+        side2  = 1.0 - front2 - back2
+
+        ang = jnp.array([
+        1.0,
+        # broad self angular response
+        f1,
+        f2,
+
+        # opponent front/back modulation
+        front2 * f1,
+        back2  * f1,
+        front1 * f2,
+        back1  * f2,
+
+        # side/center/side angular structure
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
+
+        # distance/facing contribution
+        jnp.cos(th1),
+        jnp.cos(th2),
+    ])
+
+        phi = jnp.einsum("i,j->ij", p, ang).reshape(-1)
+        return phi
     
     S = SFI.OverdampedLangevinInference(traj)
     S.compute_diffusion_constant(method="MSD")
     (funcs_and_grad, descriptor) = SFI.OLI_bases.basis_selector(
-        {"type": "custom_scalar", "functions": C_func},
+        {"type": "custom_scalar", "functions": C_function2},
         dimension=3,
         output="vector"
     )
@@ -236,7 +271,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
         drift = S.force_ansatz(x[None, :])[0]
         x = x + drift * dt
 
-        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 20.0))
+        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 30.0))
         x = x.at[1].set(theta1 if theta1 is not None else wrap_pi(x[1]))
         x = x.at[2].set(theta2 if theta2 is not None else wrap_pi(x[2]))
 
@@ -629,10 +664,10 @@ def save_sfi_model(S_model, descriptor, outdir, tag):
         **save_dict
     )
 
-save_sfi_model(S_q1, descriptor, outdir, "q1")
-save_sfi_model(S_q2, descriptor, outdir, "q2")
-save_sfi_model(S_q3, descriptor, outdir, "q3")
-save_sfi_model(S_q4, descriptor, outdir, "q4")
+#save_sfi_model(S_q1, descriptor, outdir, "q1")
+#save_sfi_model(S_q2, descriptor, outdir, "q2")
+#save_sfi_model(S_q3, descriptor, outdir, "q3")
+#save_sfi_model(S_q4, descriptor, outdir, "q4")
 
 key = random.PRNGKey(0)
 all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
