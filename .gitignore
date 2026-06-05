@@ -14,3 +14,7 @@ __pycache__/
 *.pyc
 *.log
 Results_new/
+
+Results_newbasis/
+Results_last/
+*.npz
