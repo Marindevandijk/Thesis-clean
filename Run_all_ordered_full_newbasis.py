@@ -158,7 +158,7 @@ def js_score(real, sim, bins, range_):
     return jensenshannon(p, q)
 
 def average_js_score(real_dpp, real_t1, real_t2, traj_sim):
-    score_dpp = js_score(real_dpp, np.array(traj_sim[:, 0]), bins=50, range_=(0, 20))
+    score_dpp = js_score(real_dpp, np.array(traj_sim[:, 0]), bins=50, range_=(0, 30))
     score_t1  = js_score(real_t1,  np.array(traj_sim[:, 1]), bins=50, range_=(-np.pi, np.pi))
     score_t2  = js_score(real_t2,  np.array(traj_sim[:, 2]), bins=50, range_=(-np.pi, np.pi))
     return (score_dpp + score_t1 + score_t2) / 3
@@ -201,25 +201,19 @@ def Run_Force_inference(X,time_idx,K,M,lam):
 
         ang = jnp.array([
         1.0,
-        # broad self angular response
-        #f1,
-        #f2,
-
-        # opponent front/back modulation
+        f1,
+        f2,
         front2 * f1,
         back2  * f1,
         front1 * f2,
         back1  * f2,
-        side1 * f2,
-        side2  * f1,
+        #side1 * f2,
+        #side2  * f1,
 
-        # side/center/side angular structure
         jnp.sin(2.0 * th1),
         jnp.sin(2.0 * th2),
         jnp.sin(3.0 * th1),
         jnp.sin(3.0 * th2),
-
-        # distance/facing contribution, probably useful for F_D
         jnp.cos(th1),
         jnp.cos(th2),
     ])
@@ -298,7 +292,7 @@ def Find_endpoints(S_model,outdir,tag="model",save_last_n= 3000):
     all_forces = []
     last_trajs = []
     D_values = np.linspace(1, 8, 15)
-    length = np.linspace(-np.pi, np.pi, 10,endpoint = False)
+    length = np.linspace(-np.pi, np.pi, 16,endpoint = False)
 
     outpath = os.path.join(outdir, f"Endpoints_{tag}.csv")
 
@@ -369,7 +363,7 @@ def Simulation(S_model,x0,dt,N_steps,key):
 
         x = x + drift * dt + jnp.sqrt(2*dt) *  (L @ xi)
         
-        x = x.at[0].set(jnp.clip(x[0], 0.0, 35))  
+        x = x.at[0].set(jnp.clip(x[0], 0.0, 30))  
         x = x.at[1].set(wrap_pi(x[1]))
         x = x.at[2].set(wrap_pi(x[2]))
 
@@ -451,7 +445,6 @@ for exp in experiments:
         dpp, theta1, theta2
     )
 
-    # shift time to start at 0 for this experiment
     time_idx_seg = time_idx_seg - time_idx_seg[0]
 
     X_full_list.append(X_seg)
@@ -476,14 +469,16 @@ print("segments full:", len(np.unique(segment_ids_full)))
 print("D range:", np.nanmin(dpp_full), np.nanmax(dpp_full))
 
 
-
 q01, q50, q95 = np.percentile(dpp_full, [1, 50, 95])
 lam_full = jnp.array([q01, q50, q95])
 
+print('lambda value:', lam_full)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_new", "All_fightbouts_ordered_perfight_full_newbasis_withside")
+outdir = os.path.join(base_dir, "Results_last", "All_fightbouts_full_withoutside")
 os.makedirs(outdir, exist_ok=True)
+
+
 
 S_full, descriptor_full = Run_Force_inference(
     X_full,
@@ -549,7 +544,6 @@ all_endpoints_full, all_forces_full, startpoints_full, accept_rate_full = Find_e
     tag="full",
     save_last_n=3000
 )
-
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("FULL DATASET MODEL\n")

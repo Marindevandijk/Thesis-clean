@@ -523,3 +523,41 @@ lam =jnp.array([0.3,2.7,8]))
         triple = jnp.einsum("i,j->ij", p, ang).reshape(-1)
         #phi = jnp.concatenate([triple,jnp.outer(jnp.sin(th2), f1).reshape(-1),jnp.outer(f2,jnp.sin(th1)).reshape(-1)], axis=0)
         return triple
+
+full with side
+JS_full: 0.09977963773305455
+
+without side halfs 
+Jensen-Shannon scores:
+JS_h1: 0.09987626088747885
+JS_h2: 0.09308432158541509
+
+with side halfs 
+Jensen-Shannon scores:
+JS_h1: 0.0996801210099999
+JS_h2: 0.09211253644173438
+
+
+
+
+without side check segments
+
+Jensen-Shannon scores:
+JS_q1: 0.10254215479140683
+JS_q2: 0.10818899968151104
+JS_q3: 0.09821320509668763
+JS_q4: 0.0884167591664779
+
+with side 
+JS_q1: 0.10494586612003298
+JS_q2: 0.10480425532912059
+JS_q3: 0.09955699301094569
+JS_q4: 0.088151250974702
+
+without side and not devided right
+
+Jensen-Shannon scores:
+JS_q1: 0.10063519629996359
+JS_q2: 0.1099847026541441
+JS_q3: 0.10123339109924184
+JS_q4: 0.09178938135008098
