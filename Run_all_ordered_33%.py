@@ -268,7 +268,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
         drift = S.force_ansatz(x[None, :])[0]
         x = x + drift * dt
 
-        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 30.0))
+        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 20.0))
         x = x.at[1].set(theta1 if theta1 is not None else wrap_pi(x[1]))
         x = x.at[2].set(theta2 if theta2 is not None else wrap_pi(x[2]))
 
@@ -530,7 +530,8 @@ time_idx_t3 = np.concatenate(time_idx_t3_list)
 X_all_thirds = np.vstack([X_t1, X_t2, X_t3])
 dpp_all = X_all_thirds[:, 0]
 
-lam_common = jnp.array([0.7804654 ,2.4657896, 9.029227])
+#lam_common = jnp.array([0.7804654 ,2.4657896, 9.029227])
+lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
 
 print("X_q1:", X_t1.shape)
 print("X_q2:", X_t2.shape)
@@ -538,7 +539,7 @@ print("X_q3:", X_t3.shape)
 
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_last", "All_fightbouts_thirds_withoutside")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_thirds_withoutside")
 os.makedirs(outdir, exist_ok=True)
 
 i_t1 = np.random.randint(0,len(X_t1))

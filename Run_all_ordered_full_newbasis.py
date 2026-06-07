@@ -268,7 +268,7 @@ def Simulation_deterministic(S,x0,dt,N_steps,force_tol,n_consecutive = 20,D= Non
         drift = S.force_ansatz(x[None, :])[0]
         x = x + drift * dt
 
-        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 30.0))
+        x = x.at[0].set(D if D is not None else jnp.clip(x[0], 0.0, 20.0))
         x = x.at[1].set(theta1 if theta1 is not None else wrap_pi(x[1]))
         x = x.at[2].set(theta2 if theta2 is not None else wrap_pi(x[2]))
 
@@ -471,11 +471,12 @@ print("D range:", np.nanmin(dpp_full), np.nanmax(dpp_full))
 
 q01, q50, q95 = np.percentile(dpp_full, [1, 50, 95])
 lam_full = jnp.array([q01, q50, q95])
+lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
 
 print('lambda value:', lam_full)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_last", "All_fightbouts_full_withoutside")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_full_withoutside")
 os.makedirs(outdir, exist_ok=True)
 
 
@@ -485,7 +486,7 @@ S_full, descriptor_full = Run_Force_inference(
     time_idx_full,
     K=3,
     M=4,
-    lam=lam_full)
+    lam=lam_common)
 
 key = random.PRNGKey(0)
 
@@ -556,7 +557,7 @@ with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write("\n")
 
     f.write("lambda_full:\n")
-    f.write(f"{np.array(lam_full)}\n")
+    f.write(f"{np.array(lam_common)}\n")
     f.write("\n")
 
     f.write("Jensen-Shannon score:\n")
