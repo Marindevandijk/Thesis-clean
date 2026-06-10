@@ -454,10 +454,32 @@ time_idx_full_list = []
 seg_offset_full = 0
 time_offset_full = 0
 
+experiments = [2,3,5,8,10,12,13,15,18,19,20]
+
+window_after = 25000
+
+X_full_list = []
+segment_ids_full_list = []
+time_idx_full_list = []
+
+seg_offset_full = 0
+time_offset_full = 0
+
 for exp in experiments:
     path = paths[exp]
 
-    X_coordinates, fightbout, exp_id = prepare_data(path, fightnumber=0, infight=True)
+    # Load full recording, not only the fightbout
+    X_all, fightbout, exp_id = prepare_data(path, fightnumber=0, infight=False)
+
+    # Take 25k frames after the first fightbout
+    fight_end = int(fightbout[2])
+    X_coordinates = X_all[fight_end:fight_end + window_after]
+
+    print("exp:", exp, "exp_id:", exp_id, "postfight frames:", len(X_coordinates))
+
+    if len(X_coordinates) < 10:
+        print("Skipping exp because too few postfight frames")
+        continue
 
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
     id_winner = int(winner_row["winnerIdx"].iloc[0])
@@ -468,6 +490,7 @@ for exp in experiments:
 
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
 
+    # Still segment the postfight data
     X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
         dpp, theta1, theta2
     )
@@ -490,6 +513,7 @@ dpp_full = X_full[:, 0]
 theta1_full = wrap_pi(X_full[:, 1])
 theta2_full = wrap_pi(X_full[:, 2])
 
+
 print("X_full:", X_full.shape)
 print("time_idx_full:", time_idx_full.shape)
 print("segments full:", len(np.unique(segment_ids_full)))
@@ -503,7 +527,7 @@ lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
 print('lambda value:', lam_full)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_full_withoutside")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_full_25%_afterfight_weighted")
 os.makedirs(outdir, exist_ok=True)
 
 
