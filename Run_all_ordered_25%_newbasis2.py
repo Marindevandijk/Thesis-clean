@@ -363,7 +363,7 @@ def Simulation(S_model,x0,dt,N_steps,key):
 
         x = x + drift * dt + jnp.sqrt(2*dt) *  (L @ xi)
         
-        x = x.at[0].set(jnp.clip(x[0], 0.0, 20))  
+        x = x.at[0].set(jnp.clip(x[0], 0.0, 30))  
         x = x.at[1].set(wrap_pi(x[1]))
         x = x.at[2].set(wrap_pi(x[2]))
 
