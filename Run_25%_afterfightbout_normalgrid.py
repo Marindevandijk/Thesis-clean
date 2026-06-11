@@ -419,9 +419,10 @@ paths = {
 tracking_folder = os.path.dirname(path_2)
 winner_df = make_winner_df(tracking_folder)
 
-experiments = [2,3,5,8,10,12,13,15,18,19,20]
 
-window_after = 25000
+experiments = [2,3,5,10,12,13,15,18,19,20]
+
+window_after = 30000
 
 X_full_list = []
 segment_ids_full_list = []
@@ -440,22 +441,15 @@ for exp in experiments:
     fight_end = int(fightbout[2])
     X_coordinates = X_all[fight_end:fight_end + window_after]
 
-    print("exp:", exp, "exp_id:", exp_id, "postfight frames:", len(X_coordinates))
-
-    if len(X_coordinates) < 10:
-        print("Skipping exp because too few postfight frames")
-        continue
 
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
     id_winner = int(winner_row["winnerIdx"].iloc[0])
 
-    # Relabel so fish 0 is winner and fish 1 is loser
     if id_winner == 1:
         X_coordinates = X_coordinates[:, [1, 0], :, :]
 
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
 
-    # Still segment the postfight data
     X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
         dpp, theta1, theta2
     )
@@ -478,21 +472,23 @@ dpp_full = X_full[:, 0]
 theta1_full = wrap_pi(X_full[:, 1])
 theta2_full = wrap_pi(X_full[:, 2])
 
+
 print("X_full:", X_full.shape)
 print("time_idx_full:", time_idx_full.shape)
 print("segments full:", len(np.unique(segment_ids_full)))
 print("D range:", np.nanmin(dpp_full), np.nanmax(dpp_full))
 
 
-
 q01, q50, q95 = np.percentile(dpp_full, [1, 50, 95])
 lam_full = jnp.array([q01, q50, q95])
-lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
+print(lam_full)
+lam_common = jnp.array([ 1.2914723, 7.1262345 ,17.001316 ])
 
-print('lambda value:', lam_full)
+
+print('lambda value:', lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_full_normalgrid_afterfight")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_full_normalgrid_afterfight_2")
 os.makedirs(outdir, exist_ok=True)
 
 S_full, descriptor_full = Run_Force_inference(
