@@ -19,3 +19,5 @@ Results_newbasis/
 Results_last/
 *.npz
 Results_reproduce/
+Results_reproduce/Results_reproduce
+Results_modbasis
