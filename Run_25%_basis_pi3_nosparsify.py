@@ -532,7 +532,7 @@ dpp_all = X_all_quarters[:, 0]
 
 #lam_common = jnp.array([0.7804654 ,2.4657896, 9.029227])
 #lam_common = jnp.array([0.7804654, 1.80657896, 13.029227])
-lam_common = jnp.array([[0.7804654 ,2.2657895 ,9.029227 ]])
+lam_common = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
 print("X_q1:", X_q1.shape)
 print("X_q2:", X_q2.shape)
 print("X_q3:", X_q3.shape)
