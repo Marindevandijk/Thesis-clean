@@ -2,7 +2,7 @@
 #SBATCH --job-name=fish_expall
 #SBATCH --output=output_pi2pi4_full.log
 #SBATCH --error=error_expall_pi2pi4_full.log
-#SBATCH --time=70:00:00
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8G
