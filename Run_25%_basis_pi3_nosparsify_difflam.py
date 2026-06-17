@@ -176,57 +176,50 @@ def Run_Force_inference(X,time_idx,K,M,lam):
     def smooth_gate(z, sharpness=8.0):
         return 0.5 * (1.0 + jnp.tanh(sharpness * z))
 
+
     def C_function2(x):
         D  = x[0]
-        th1 = x[1]   # thetaW
-        th2 = x[2]   # thetaL
-        k = 1.7
+        th1 = x[1]
+        th2 = x[2]
+        k =1.7
 
-        p = radial_basis(D)
-
-        f1 = jnp.tanh(k * jnp.sin(th1))
-        f2 = jnp.tanh(k * jnp.sin(th2))
-
+        p =  radial_basis(D) 
+        f1 = jnp.tanh(k*jnp.sin(th1))
+        f2 = jnp.tanh(k *jnp.sin(th2))
         a1 = jnp.abs(wrap_pi(th1))
         a2 = jnp.abs(wrap_pi(th2))
 
-        s = 6.0
-
+        s = 6
         front1 = smooth_gate((jnp.pi/3) - a1, s)
         back1  = smooth_gate(a1 - (2*jnp.pi/3), s)
 
         front2 = smooth_gate((jnp.pi/3) - a2, s)
         back2  = smooth_gate(a2 - (2*jnp.pi/3), s)
-
-        mod1 = front1 - back1
-        mod2 = front2 - back2
+    
 
         ang = jnp.array([
-            1.0,
+        1.0,
 
-            f1,
-            f2,
+        f1,
+        f2,
+        front2 * f1,
+        back2   * f1,
+        front1 * f2,
+        back1   * f2,
 
-            #mod2 * f1,
-            #mod1 * f2,
-            front2 * f1,
-            back2   * f1,
-            front1 * f2,
-            back1   * f2,
+        jnp.sin(2.0 * th1),
+        jnp.sin(2.0 * th2),
+        jnp.sin(3.0 * th1),
+        jnp.sin(3.0 * th2),
 
-            jnp.sin(2.0 * th1),
-            jnp.sin(2.0 * th2),
-            jnp.sin(3.0 * th1),
-            jnp.sin(3.0 * th2),
+        jnp.cos(th1),
+        jnp.cos(th2),])
 
-            jnp.cos(th1),
-            jnp.cos(th2),
-
-            #jnp.cos(th1) * jnp.cos(th2),
-        ])
+        #jnp.cos(th1) * jnp.cos(th2),])
 
         phi = jnp.einsum("i,j->ij", p, ang).reshape(-1)
         return phi
+        
     S = SFI.OverdampedLangevinInference(traj)
     S.compute_diffusion_constant(method="MSD")
     (funcs_and_grad, descriptor) = SFI.OLI_bases.basis_selector(
@@ -422,150 +415,233 @@ paths = {
     20: path_20,
 }
 
+experiments = [2,3,5,8,10,12,13,15,18,19,20]
 tracking_folder = os.path.dirname(path_2)
 winner_df = make_winner_df(tracking_folder)
 
-experiments = [2,3,5,8,10,12,13,15,18,19,20]
-X_full_list = []
-segment_ids_full_list = []
-time_idx_full_list = []
+X_q1_list = []
+X_q2_list = []
+X_q3_list = []
+X_q4_list = []
 
-seg_offset_full = 0
-time_offset_full = 0
+segment_ids_q1_list = []
+segment_ids_q2_list = []
+segment_ids_q3_list = []
+segment_ids_q4_list = []
+
+time_idx_q1_list = []
+time_idx_q2_list = []
+time_idx_q3_list = []
+time_idx_q4_list = []
+
+seg_offset_q1 = 0
+seg_offset_q2 = 0
+seg_offset_q3 = 0
+seg_offset_q4 = 0
+
+time_offset_q1 = 0
+time_offset_q2 = 0
+time_offset_q3 = 0
+time_offset_q4 = 0
 
 for exp in experiments:
     path = paths[exp]
 
-    X_coordinates, fightbout, exp_id = prepare_data(path, fightnumber=0, infight=True)
+    X_coordinates, fightbout, exp_id = prepare_data(path, 0, True)
 
     winner_row = winner_df[winner_df["EXP_id"] == exp_id]
     id_winner = int(winner_row["winnerIdx"].iloc[0])
 
-    # Relabel so fish 0 is winner and fish 1 is loser
     if id_winner == 1:
         X_coordinates = X_coordinates[:, [1, 0], :, :]
 
+
     dpp, theta1, theta2 = calculate_variables(X_coordinates)
 
-    X_seg, time_idx_seg, segment_ids_seg, seg_ranges = Build_segmented_data(
-        dpp, theta1, theta2
-    )
+    n_raw = len(dpp)
+    q1_end = n_raw // 4
+    q2_end = n_raw // 2
+    q3_end = 3 * n_raw // 4
 
-    time_idx_seg = time_idx_seg - time_idx_seg[0]
+    # split raw fightbout first
+    dpp_q1, theta1_q1, theta2_q1 = dpp[:q1_end], theta1[:q1_end], theta2[:q1_end]
+    dpp_q2, theta1_q2, theta2_q2 = dpp[q1_end:q2_end], theta1[q1_end:q2_end], theta2[q1_end:q2_end]
+    dpp_q3, theta1_q3, theta2_q3 = dpp[q2_end:q3_end], theta1[q2_end:q3_end], theta2[q2_end:q3_end]
+    dpp_q4, theta1_q4, theta2_q4 = dpp[q3_end:], theta1[q3_end:], theta2[q3_end:]
 
-    X_full_list.append(X_seg)
-    segment_ids_full_list.append(segment_ids_seg + seg_offset_full)
-    time_idx_full_list.append(time_idx_seg + time_offset_full)
+    # then segment each quarter before SFI
+    X_seg_q1, time_idx_seg_q1, segment_ids_seg_q1, _ = Build_segmented_data(dpp_q1, theta1_q1, theta2_q1)
+    X_seg_q2, time_idx_seg_q2, segment_ids_seg_q2, _ = Build_segmented_data(dpp_q2, theta1_q2, theta2_q2)
+    X_seg_q3, time_idx_seg_q3, segment_ids_seg_q3, _ = Build_segmented_data(dpp_q3, theta1_q3, theta2_q3)
+    X_seg_q4, time_idx_seg_q4, segment_ids_seg_q4, _ = Build_segmented_data(dpp_q4, theta1_q4, theta2_q4)
 
-    seg_offset_full += segment_ids_seg.max() + 1
-    time_offset_full += time_idx_seg.max() + 1
+    # q1
+    X_q1_list.append(X_seg_q1)
+    segment_ids_q1_list.append(segment_ids_seg_q1 + seg_offset_q1)
+    time_idx_q1_list.append(time_idx_seg_q1 + time_offset_q1)
+
+    seg_offset_q1 += segment_ids_seg_q1.max() + 1
+    time_offset_q1 += time_idx_seg_q1.max() + 1
+
+    # q2
+    X_q2_list.append(X_seg_q2)
+    segment_ids_q2_list.append(segment_ids_seg_q2 + seg_offset_q2)
+    time_idx_q2_list.append(time_idx_seg_q2 + time_offset_q2)
+
+    seg_offset_q2 += segment_ids_seg_q2.max() + 1
+    time_offset_q2 += time_idx_seg_q2.max() + 1
+
+    # q3
+    X_q3_list.append(X_seg_q3)
+    segment_ids_q3_list.append(segment_ids_seg_q3 + seg_offset_q3)
+    time_idx_q3_list.append(time_idx_seg_q3 + time_offset_q3)
+
+    seg_offset_q3 += segment_ids_seg_q3.max() + 1
+    time_offset_q3 += time_idx_seg_q3.max() + 1
+
+    # q4
+    X_q4_list.append(X_seg_q4)
+    segment_ids_q4_list.append(segment_ids_seg_q4 + seg_offset_q4)
+    time_idx_q4_list.append(time_idx_seg_q4 + time_offset_q4)
+
+    seg_offset_q4 += segment_ids_seg_q4.max() + 1
+    time_offset_q4 += time_idx_seg_q4.max() + 1
+
+X_q1 = np.vstack(X_q1_list)
+segment_ids_q1 = np.concatenate(segment_ids_q1_list)
+time_idx_q1 = np.concatenate(time_idx_q1_list)
+
+X_q2 = np.vstack(X_q2_list)
+segment_ids_q2 = np.concatenate(segment_ids_q2_list)
+time_idx_q2 = np.concatenate(time_idx_q2_list)
+
+X_q3 = np.vstack(X_q3_list)
+segment_ids_q3 = np.concatenate(segment_ids_q3_list)
+time_idx_q3 = np.concatenate(time_idx_q3_list)
+
+X_q4 = np.vstack(X_q4_list)
+segment_ids_q4 = np.concatenate(segment_ids_q4_list)
+time_idx_q4 = np.concatenate(time_idx_q4_list)
+
+X_all_quarters = np.vstack([X_q1, X_q2, X_q3, X_q4])
+dpp_all = X_all_quarters[:, 0]
 
 
-X_full = np.vstack(X_full_list)
-segment_ids_full = np.concatenate(segment_ids_full_list)
-time_idx_full = np.concatenate(time_idx_full_list)
+X_all_quarters = np.vstack([X_q1, X_q2, X_q3, X_q4])
+dpp_all = X_all_quarters[:, 0]
 
-dpp_full = X_full[:, 0]
-theta1_full = wrap_pi(X_full[:, 1])
-theta2_full = wrap_pi(X_full[:, 2])
+#lam_common = jnp.array([0.7804654 ,2.4657896, 9.029227])
+#lam_common = jnp.array([0.7804654, 1.80657896, 13.029227])
+#lam_common = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
+lam_common = jnp.array([0.7804654, 1.80657896, 13.029227])
 
-print("X_full:", X_full.shape)
-print("time_idx_full:", time_idx_full.shape)
-print("segments full:", len(np.unique(segment_ids_full)))
-print("D range:", np.nanmin(dpp_full), np.nanmax(dpp_full))
-
-
-q01, q50, q95 = np.percentile(dpp_full, [1, 50, 95])
-lam_full = jnp.array([q01, q50, q95])
-lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
-
-print('lambda value:', lam_full)
+print("X_q1:", X_q1.shape)
+print("X_q2:", X_q2.shape)
+print("X_q3:", X_q3.shape)
+print("X_q4:", X_q4.shape)
+print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_pi3_difflam")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_quarters_pi3_nospars_diflam")
 os.makedirs(outdir, exist_ok=True)
 
+i_q1 = np.random.randint(0,len(X_q1))
+i_q2 = np.random.randint(0,len(X_q2))
+i_q3= np.random.randint(0,len(X_q3))
+i_q4 = np.random.randint(0,len(X_q4))
 
-#lam_final = jnp.array([0.7804654, 1.80657896, 16.029227])
-lam_final = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
-lam_final = jnp.array([0.7804654, 1.80657896, 13.029227])
-
-S_full, descriptor_full = Run_Force_inference(X_full,time_idx_full,K=3,M=4,lam=lam_final)
+x0_q1 = X_q1[i_q1]
+x0_q2 =X_q2[i_q2]
+x0_q3 = X_q3[i_q3]
+x0_q4 = X_q4[i_q4]
 
 key = random.PRNGKey(0)
 
-i_full = np.random.randint(0, len(X_full))
-x0_full = X_full[i_full]
+S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam =lam_common) #jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+S_q4, descriptor = Run_Force_inference(X_q4, time_idx_q4, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
 
-traj_sim_full, key = Simulation(
-    S_full,
-    x0_full,
-    dt=0.01,
-    N_steps=500000,
-    key=key
-)
+traj_sim_q1, key = Simulation(S_q1, x0_q1, dt=0.01, N_steps=500000, key=key)
+traj_sim_q2, key = Simulation(S_q2, x0_q2, dt=0.01, N_steps=500000, key=key)
+traj_sim_q3, key = Simulation(S_q3, x0_q3, dt=0.01, N_steps=500000, key=key)
+traj_sim_q4, key = Simulation(S_q4, x0_q4, dt=0.01, N_steps=500000, key=key)
 
-traj_sim_full_np = np.array(traj_sim_full)
+traj_sim_q1_np = np.array(traj_sim_q1)
+traj_sim_q2_np = np.array(traj_sim_q2)
+traj_sim_q3_np = np.array(traj_sim_q3)
+traj_sim_q4_np = np.array(traj_sim_q4)
+
 
 np.savez(
-    os.path.join(outdir, "stochastic_simulated_trajectory_full.npz"),
-    traj_sim_full=traj_sim_full_np,
-    x0_full=x0_full,
+    os.path.join(outdir, "stochastic_simulated_trajectories_quarters.npz"),
+    traj_sim_q1=traj_sim_q1_np,
+    traj_sim_q2=traj_sim_q2_np,
+    traj_sim_q3=traj_sim_q3_np,
+    traj_sim_q4=traj_sim_q4_np,
+    x0_q1=x0_q1,
+    x0_q2=x0_q2,
+    x0_q3=x0_q3,
+    x0_q4=x0_q4,
 )
 
-fig, axs = plt.subplots(1, 3, figsize=(15,4))
+fig, axs = plt.subplots(1, 3, figsize=(15, 4))
 
-axs[0].hist(traj_sim_full_np[:,0], alpha=0.5, density=True, label="sim full", bins=100)
-axs[0].hist(X_full[:,0], alpha=0.5, density=True, label="real full", bins=100)
+axs[0].hist(traj_sim_q1_np[:, 0], alpha=0.4, density=True, label="0-25%", bins=100)
+axs[0].hist(traj_sim_q2_np[:, 0], alpha=0.4, density=True, label="25-50%", bins=100)
+axs[0].hist(traj_sim_q3_np[:, 0], alpha=0.4, density=True, label="50-75%", bins=100)
+axs[0].hist(traj_sim_q4_np[:, 0], alpha=0.4, density=True, label="75-100%", bins=100)
 axs[0].legend()
 axs[0].set_title(r"$d_{pp}$")
 
-axs[1].hist(wrap_pi(traj_sim_full_np[:,1]), density=True, alpha=0.5, label="sim full", bins=100)
-axs[1].hist(wrap_pi(X_full[:,1]), density=True, alpha=0.5, label="real full", bins=100)
-axs[1].set_title(r"$\theta_W$")
+axs[1].hist(wrap_pi(traj_sim_q1_np[:, 1]), alpha=0.4, density=True, bins=100)
+axs[1].hist(wrap_pi(traj_sim_q2_np[:, 1]), alpha=0.4, density=True, bins=100)
+axs[1].hist(wrap_pi(traj_sim_q3_np[:, 1]), alpha=0.4, density=True, bins=100)
+axs[1].hist(wrap_pi(traj_sim_q4_np[:, 1]), alpha=0.4, density=True, bins=100)
+axs[1].set_title(r"$\theta_1$")
 
-axs[2].hist(wrap_pi(traj_sim_full_np[:,2]), density=True, alpha=0.5, label="sim full", bins=100)
-axs[2].hist(wrap_pi(X_full[:,2]), density=True, alpha=0.5, label="real full", bins=100)
-axs[2].set_title(r"$\theta_L$")
+axs[2].hist(wrap_pi(traj_sim_q1_np[:, 2]), alpha=0.4, density=True, bins=100)
+axs[2].hist(wrap_pi(traj_sim_q2_np[:, 2]), alpha=0.4, density=True, bins=100)
+axs[2].hist(wrap_pi(traj_sim_q3_np[:, 2]), alpha=0.4, density=True, bins=100)
+axs[2].hist(wrap_pi(traj_sim_q4_np[:, 2]), alpha=0.4, density=True, bins=100)
+axs[2].set_title(r"$\theta_2$")
 
 plt.tight_layout()
-fig_path = os.path.join(outdir, "stochastic_simulation_full_distribution.png")
+fig_path = os.path.join(outdir, "stochastic_simulation_distributions_quarters.png")
 plt.savefig(fig_path, dpi=300)
 plt.close()
 
+js_q1 = average_js_score(X_q1[:, 0], wrap_pi(X_q1[:, 1]), wrap_pi(X_q1[:, 2]), traj_sim_q1_np)
+js_q2 = average_js_score(X_q2[:, 0], wrap_pi(X_q2[:, 1]), wrap_pi(X_q2[:, 2]), traj_sim_q2_np)
+js_q3 = average_js_score(X_q3[:, 0], wrap_pi(X_q3[:, 1]), wrap_pi(X_q3[:, 2]), traj_sim_q3_np)
+js_q4 = average_js_score(X_q4[:, 0], wrap_pi(X_q4[:, 1]), wrap_pi(X_q4[:, 2]), traj_sim_q4_np)
 
-js_full = average_js_score(
-    X_full[:,0],
-    wrap_pi(X_full[:,1]),
-    wrap_pi(X_full[:,2]),
-    traj_sim_full_np
-)
-
-print("JS full:", js_full)
-
-all_endpoints_full, all_forces_full, startpoints_full, accept_rate_full = Find_endpoints(
-    S_full,
-    outdir,
-    tag="full",
-    save_last_n=3000
-)
+#all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", save_last_n=3000)
+#all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", save_last_n =3000)
 
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
-    f.write("FULL DATASET MODEL\n")
-    f.write(f"experiments: {experiments}\n")
+    f.write(f"length of data : {X_all_quarters.shape}\n")
+    f.write(f"file: {os.path.basename(path)}\n")
+    f.write(f"fightbout: {fightbout}\n")
     f.write("\n")
 
-    f.write(f"X_full shape: {X_full.shape}\n")
-    f.write(f"time_idx_full shape: {time_idx_full.shape}\n")
-    f.write(f"segments full: {len(np.unique(segment_ids_full))}\n")
+
+    f.write("lambda_common (q1, q50, q95):\n")
+    f.write(f"{np.array(lam_common)}\n")
+
+    f.write(f"X_q1 shape: {X_q1.shape}\n")
+    f.write(f"X_q2 shape: {X_q2.shape}\n")
+    f.write(f"X_q3 shape: {X_q3.shape}\n")
+    f.write(f"X_q4 shape: {X_q4.shape}\n")
+    f.write(f"X_all_quarters shape: {X_all_quarters.shape}\n")
     f.write("\n")
 
-    f.write("lambda_full:\n")
-    f.write(f"{np.array(lam_final)}\n")
     f.write("\n")
-
-    f.write("Jensen-Shannon score:\n")
-    f.write(f"JS_full: {js_full}\n")
+    f.write("Jensen-Shannon scores:\n")
+    f.write(f"JS_q1: {js_q1}\n")
+    f.write(f"JS_q2: {js_q2}\n")
+    f.write(f"JS_q3: {js_q3}\n")
+    f.write(f"JS_q4: {js_q4}\n")
 
 def save_sfi_model(S_model, descriptor, outdir, tag):
 
@@ -581,5 +657,15 @@ def save_sfi_model(S_model, descriptor, outdir, tag):
         **save_dict
     )
 
-save_sfi_model(S_full, descriptor_full, outdir, "full")
+#save_sfi_model(S_q1, descriptor, outdir, "q1")
+#save_sfi_model(S_q2, descriptor, outdir, "q2")
+#save_sfi_model(S_q3, descriptor, outdir, "q3")
+#save_sfi_model(S_q4, descriptor, outdir, "q4")
+
+key = random.PRNGKey(0)
+all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
+all_endpoints_q2,all_forces_q2, startpoints_q2, accept_rate_q2 = Find_endpoints(S_q2, outdir, tag="q2", save_last_n=3000)
+all_endpoints_q3, all_forces_q3, startpoints_q3, accept_rate_q3 = Find_endpoints(S_q3, outdir, tag="q3", save_last_n=3000)
+all_endpoints_q4, all_forces_q4, startpoints_q4, accept_rate_q4 = Find_endpoints(S_q4, outdir, tag="q4", save_last_n=3000)
+
 
