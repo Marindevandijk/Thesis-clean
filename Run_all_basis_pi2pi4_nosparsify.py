@@ -481,13 +481,13 @@ lam_common = jnp.array([0.7804654, 2.2657896, 9.029227])
 print('lambda value:', lam_full)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_pi2pi4")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_pi2pi4_9lam")
 os.makedirs(outdir, exist_ok=True)
 
 
 #lam_final = jnp.array([0.7804654, 1.80657896, 16.029227])
-#lam_final = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
-lam_final = jnp.array([0.7804654, 1.80657896, 13.029227])
+lam_final = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
+#lam_final = jnp.array([0.7804654, 1.80657896, 13.029227])
 
 S_full, descriptor_full = Run_Force_inference(X_full,time_idx_full,K=3,M=4,lam=lam_final)
 

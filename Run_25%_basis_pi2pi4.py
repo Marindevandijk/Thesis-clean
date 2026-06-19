@@ -528,8 +528,8 @@ X_all_quarters = np.vstack([X_q1, X_q2, X_q3, X_q4])
 dpp_all = X_all_quarters[:, 0]
 
 #lam_common = jnp.array([0.7804654 ,2.4657896, 9.029227])
-lam_common = jnp.array([0.7804654, 1.80657896, 13.029227])
-#lam_common = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
+#lam_common = jnp.array([0.7804654, 1.80657896, 13.029227])
+lam_common = jnp.array([0.7804654 ,2.2657895 ,9.029227 ])
 print("X_q1:", X_q1.shape)
 print("X_q2:", X_q2.shape)
 print("X_q3:", X_q3.shape)
@@ -537,7 +537,7 @@ print("X_q4:", X_q4.shape)
 print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_quarters_pi2pi4_nospars")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_quarters_pi2pi4_nospars_9lam")
 os.makedirs(outdir, exist_ok=True)
 
 i_q1 = np.random.randint(0,len(X_q1))
