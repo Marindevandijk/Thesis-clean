@@ -552,22 +552,21 @@ x0_q4 = X_q4[i_q4]
 
 key = random.PRNGKey(0)
 
-S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
-S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam =lam_common) #jnp.array([0.7804654, 2.2657896, 9.029227]))
-S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+#S_q1, descriptor = Run_Force_inference(X_q1, time_idx_q1, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
+#S_q2, descriptor = Run_Force_inference(X_q2, time_idx_q2, K=3, M=4, lam =lam_common) #jnp.array([0.7804654, 2.2657896, 9.029227]))
+#S_q3, descriptor = Run_Force_inference(X_q3, time_idx_q3, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
 S_q4, descriptor = Run_Force_inference(X_q4, time_idx_q4, K=3, M=4, lam = lam_common)#jnp.array([0.7804654, 2.2657896, 9.029227]))
 
-traj_sim_q1, key = Simulation(S_q1, x0_q1, dt=0.01, N_steps=500000, key=key)
-traj_sim_q2, key = Simulation(S_q2, x0_q2, dt=0.01, N_steps=500000, key=key)
-traj_sim_q3, key = Simulation(S_q3, x0_q3, dt=0.01, N_steps=500000, key=key)
+#traj_sim_q1, key = Simulation(S_q1, x0_q1, dt=0.01, N_steps=500000, key=key)
+#traj_sim_q2, key = Simulation(S_q2, x0_q2, dt=0.01, N_steps=500000, key=key)
+#traj_sim_q3, key = Simulation(S_q3, x0_q3, dt=0.01, N_steps=500000, key=key)
 traj_sim_q4, key = Simulation(S_q4, x0_q4, dt=0.01, N_steps=500000, key=key)
 
-traj_sim_q1_np = np.array(traj_sim_q1)
-traj_sim_q2_np = np.array(traj_sim_q2)
-traj_sim_q3_np = np.array(traj_sim_q3)
+#traj_sim_q1_np = np.array(traj_sim_q1)
+#traj_sim_q2_np = np.array(traj_sim_q2)
+#traj_sim_q3_np = np.array(traj_sim_q3)
 traj_sim_q4_np = np.array(traj_sim_q4)
-
-
+"""
 np.savez(
     os.path.join(outdir, "stochastic_simulated_trajectories_quarters.npz"),
     traj_sim_q1=traj_sim_q1_np,
@@ -605,15 +604,15 @@ plt.tight_layout()
 fig_path = os.path.join(outdir, "stochastic_simulation_distributions_quarters.png")
 plt.savefig(fig_path, dpi=300)
 plt.close()
-
-js_q1 = average_js_score(X_q1[:, 0], wrap_pi(X_q1[:, 1]), wrap_pi(X_q1[:, 2]), traj_sim_q1_np)
-js_q2 = average_js_score(X_q2[:, 0], wrap_pi(X_q2[:, 1]), wrap_pi(X_q2[:, 2]), traj_sim_q2_np)
-js_q3 = average_js_score(X_q3[:, 0], wrap_pi(X_q3[:, 1]), wrap_pi(X_q3[:, 2]), traj_sim_q3_np)
+"""
+#js_q1 = average_js_score(X_q1[:, 0], wrap_pi(X_q1[:, 1]), wrap_pi(X_q1[:, 2]), traj_sim_q1_np)
+#js_q2 = average_js_score(X_q2[:, 0], wrap_pi(X_q2[:, 1]), wrap_pi(X_q2[:, 2]), traj_sim_q2_np)
+#js_q3 = average_js_score(X_q3[:, 0], wrap_pi(X_q3[:, 1]), wrap_pi(X_q3[:, 2]), traj_sim_q3_np)
 js_q4 = average_js_score(X_q4[:, 0], wrap_pi(X_q4[:, 1]), wrap_pi(X_q4[:, 2]), traj_sim_q4_np)
 
 #all_endpoints, all_forces, startpoints, accept_rate = Find_endpoints(S_first, outdir,tag="first_half", save_last_n=3000)
 #all_endpoints_last, all_forces_last, startpoints_last, accept_rate_last = Find_endpoints(S_last,outdir, tag="last_half", save_last_n =3000)
-
+"""
 with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write(f"length of data : {X_all_quarters.shape}\n")
     f.write(f"file: {os.path.basename(path)}\n")
@@ -637,7 +636,7 @@ with open(os.path.join(outdir, "metadata.txt"), "w") as f:
     f.write(f"JS_q2: {js_q2}\n")
     f.write(f"JS_q3: {js_q3}\n")
     f.write(f"JS_q4: {js_q4}\n")
-
+"""
 def save_sfi_model(S_model, descriptor, outdir, tag):
 
     save_dict = {
@@ -658,9 +657,9 @@ def save_sfi_model(S_model, descriptor, outdir, tag):
 #save_sfi_model(S_q4, descriptor, outdir, "q4")
 
 key = random.PRNGKey(0)
-all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
-all_endpoints_q2,all_forces_q2, startpoints_q2, accept_rate_q2 = Find_endpoints(S_q2, outdir, tag="q2", save_last_n=3000)
-all_endpoints_q3, all_forces_q3, startpoints_q3, accept_rate_q3 = Find_endpoints(S_q3, outdir, tag="q3", save_last_n=3000)
+#all_endpoints_q1, all_forces_q1, startpoints_q1, accept_rate_q1 = Find_endpoints(S_q1, outdir, tag="q1", save_last_n=3000)
+#all_endpoints_q2,all_forces_q2, startpoints_q2, accept_rate_q2 = Find_endpoints(S_q2, outdir, tag="q2", save_last_n=3000)
+#all_endpoints_q3, all_forces_q3, startpoints_q3, accept_rate_q3 = Find_endpoints(S_q3, outdir, tag="q3", save_last_n=3000)
 all_endpoints_q4, all_forces_q4, startpoints_q4, accept_rate_q4 = Find_endpoints(S_q4, outdir, tag="q4", save_last_n=3000)
 
 
