@@ -230,7 +230,7 @@ def Run_Force_inference(X,time_idx,K,M,lam):
   
     basis_F, grad_F = funcs_and_grad
     S.infer_force_linear(basis_linear=basis_F, basis_linear_gradient=grad_F)
-    #S.sparsify_force()
+    S.sparsify_force()
     S.compute_force_error() 
     S.print_report()
     return S, descriptor
@@ -542,7 +542,7 @@ print("X_q4:", X_q4.shape)
 print("lam_common:", lam_common)
 
 base_dir = os.environ.get("SLURM_SUBMIT_DIR", os.getcwd())
-outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_quarters_pi3_nospars_diflam")
+outdir = os.path.join(base_dir, "Results_reproduce", "All_fightbouts_quarters_pi3_spars_diflam")
 os.makedirs(outdir, exist_ok=True)
 
 i_q1 = np.random.randint(0,len(X_q1))

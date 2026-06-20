@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=fish_expall
-#SBATCH --output=output_expall_pi3_quarters_diflam.log
-#SBATCH --error=error_expall_order_pi3_quarters_diflam.log
+#SBATCH --output=output_expall_pi3_quarters_diflam._sparslog
+#SBATCH --error=error_expall_order_pi3_quarters_diflam_spars.log
 #SBATCH --time=120:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
