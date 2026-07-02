@@ -92,11 +92,11 @@ Before running the analysis, make sure the local folder structure matches the pa
 
 ## Stochastic Force Inference dependency
 
-This project uses Stochastic Force Inference (SFI) to infer the deterministic force field from stochastic trajectory data. The SFI code used for this thesis is included in this repository in:
+This project uses Stochastic Force Inference (SFI) to infer the deterministic force field from stochastic trajectory data. The SFI method is based on Frishman and Ronceray (2020) [1]. The SFI code used for this thesis is included in this repository in:
 
 ```text
-External/StochasticForceInference/
-
+SFI/
+```
 
 ## Running the analysis
 
@@ -114,11 +114,11 @@ sbatch scripts/slurm/run_all_ordered.slurm
 
 The scripts perform the following steps:
 
-1. Load tracked 3D zebrafish coordinates from `.h5` files.
+1. Load tracked 3D zebrafish coordinates from `.h5` files from the fighting-zebrafish dataset [2].
 2. Select fight-bout data.
 3. Compute the state variables `D`, `theta1`, and `theta2`.
 4. Clean and segment the trajectory data.
-5. Infer the force field using Stochastic Force Inference.
+5. Infer the force field using Stochastic Force Inference [1].
 6. Simulate stochastic trajectories from the inferred model.
 7. Save model outputs, endpoint data, figures, and metadata.
 
@@ -143,14 +143,13 @@ stochastic_simulation_distributions.png
 ```
 
 ## Notes on reproducibility
-
-Several scripts use fixed random seeds, for example through `np.random.seed(...)` or `jax.random.PRNGKey(...)`, to make parts of the analysis reproducible. Some scripts are specific to particular experiments, fight bouts, or basis choices. The file names indicate the analysis condition, such as:
+ Some scripts are specific to particular experiments, fight bouts, or basis choices. The file names indicate the analysis condition, such as:
 
 * `Run_all_ordered.py`: analysis using ordered winner-loser coordinates and on whole fightbout
 * `Run_25%_...py`: analysis on a subset of the data
 * `Run_exp*.py`: analysis for individual experiments
 
-## Important git hygiene
+## Important git information
 
 Large files should not be committed to the repository. This includes:
 
@@ -166,9 +165,15 @@ __pycache__/
 
 These files are excluded in `.gitignore`.
 
+## References
+
+[1] Anna Frishman and Pierre Ronceray. Learning force fields from stochastic trajectories. Physical Review X, 10(2):021009, 2020.
+
+[2] Liam O’Shaughnessy, Tatsuo Izawa, Ichiro Masai, Joshua W. Shaevitz, and Greg J. Stephens. Dynamics of dominance in interacting zebrafish. PRX Life, 2(4):043006, 2024.
+
 ## Author
 
-Marin de van Dijk
+Marinde van Dijk
 
 Thesis project, 2026.
 
