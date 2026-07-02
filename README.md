@@ -141,9 +141,8 @@ SFI_model_data_*.npz
 Endpoints_*.csv
 stochastic_simulation_distributions.png
 ```
-
 ## Notes on reproducibility
- Some scripts are specific to particular experiments, fight bouts, or basis choices. The file names indicate the analysis condition, such as:
+Some scripts are specific to particular experiments, fight bouts, or basis choices. The file names indicate the analysis condition, such as:
 
 * `Run_all_ordered.py`: analysis using ordered winner-loser coordinates and on whole fightbout
 * `Run_25%_...py`: analysis on a subset of the data
